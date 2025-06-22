@@ -1,0 +1,138 @@
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">تعديل الفاتورة</h4>
+            </div>
+            <div class="card-body">
+                <form action="/invoices/<%= invoice.id %>" method="POST" id="invoiceForm">
+                    <input type="hidden" name="_method" value="PUT">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="invoice_number" class="form-label">رقم الفاتورة</label>
+                            <input type="text" class="form-control" id="invoice_number" name="invoice_number" value="<%= invoice.invoice_number %>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">التاريخ</label>
+                            <input type="date" class="form-control" id="date" name="date" value="<%= invoice.date %>" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="customer_name" class="form-label">اسم العميل</label>
+                            <input type="text" class="form-control" id="customer_name" name="customer_name" value="<%= invoice.customer_name %>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="customer_phone" class="form-label">رقم الهاتف</label>
+                            <input type="tel" class="form-control" id="customer_phone" name="customer_phone" value="<%= invoice.customer_phone %>">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customer_address" class="form-label">العنوان</label>
+                        <textarea class="form-control" id="customer_address" name="customer_address" rows="2"><%= invoice.customer_address %></textarea>
+                    </div>
+
+                    <h5 class="mt-4 mb-3">تفاصيل الفاتورة</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="itemsTable">
+                            <thead>
+                                <tr>
+                                    <th>الخدمة</th>
+                                    <th>الوصف</th>
+                                    <th>السعر</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% invoice.items.forEach((item, index) => { %>
+                                    <tr>
+                                        <td>
+                                            <input type="text" class="form-control" name="items[<%= index %>][service]" value="<%= item.service %>" required>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control" name="items[<%= index %>][description]" value="<%= item.description %>">
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control" name="items[<%= index %>][price]" value="<%= item.price %>" min="0" step="0.001" required>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-secondary mb-3" onclick="addRow()">
+                        <i class="bi bi-plus-lg"></i> إضافة خدمة
+                    </button>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="total_amount" class="form-label">المبلغ الإجمالي</label>
+                            <input type="number" class="form-control" id="total_amount" name="total_amount" value="<%= invoice.total_amount %>" readonly>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="/invoices/<%= invoice.id %>" class="btn btn-secondary">إلغاء</a>
+                        <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let rowCount = <%= invoice.items.length %>;
+
+    function addRow() {
+        const tbody = document.querySelector('#itemsTable tbody');
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td>
+                <input type="text" class="form-control" name="items[${rowCount}][service]" required>
+            </td>
+            <td>
+                <input type="text" class="form-control" name="items[${rowCount}][description]">
+            </td>
+            <td>
+                <input type="number" class="form-control" name="items[${rowCount}][price]" min="0" step="0.001" required>
+            </td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(newRow);
+        rowCount++;
+        updateTotal();
+    }
+
+    function removeRow(button) {
+        const tbody = document.querySelector('#itemsTable tbody');
+        if (tbody.children.length > 1) {
+            button.closest('tr').remove();
+            updateTotal();
+        }
+    }
+
+    function updateTotal() {
+        const prices = document.querySelectorAll('input[name$="[price]"]');
+        let total = 0;
+        prices.forEach(price => {
+            total += parseFloat(price.value || 0);
+        });
+        document.getElementById('total_amount').value = total.toFixed(2);
+    }
+
+    document.querySelector('#itemsTable').addEventListener('input', function(e) {
+        if (e.target.name.endsWith('[price]')) {
+            updateTotal();
+        }
+    });
+</script> 

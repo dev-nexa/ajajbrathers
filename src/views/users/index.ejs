@@ -1,0 +1,74 @@
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>إدارة المستخدمين</h2>
+        <a href="/users/create" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i> إضافة مستخدم جديد
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>اسم المستخدم</th>
+                            <th>الصلاحية</th>
+                            <th>تاريخ التسجيل</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% users.forEach(function(user) { %>
+                            <tr>
+                                <td><%= user.username %></td>
+                                <td>
+                                    <span class="badge bg-<%= user.role === 'editor' ? 'primary' : 'secondary' %>">
+                                        <%= user.role === 'editor' ? 'محرر' : user.role === 'viewer' ? 'مستعرض' : 'غير معروف' %>
+                                    </span>
+                                </td>
+                                <td><%= new Date(user.created_at).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="/users/<%= user.id %>/edit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <% if (user.id === locals.user.id) { %>
+                                            <a href="/auth/change-password" class="btn btn-sm btn-outline-warning">
+                                                <i class="bi bi-key"></i>
+                                            </a>
+                                        <% } %>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal<%= user.id %>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade" id="deleteModal<%= user.id %>" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">تأكيد الحذف</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    هل أنت متأكد من حذف المستخدم <%= user.username %>؟
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                                    <form action="/users/delete/<%= user.id %>" method="POST" class="d-inline">
+                                                        <button type="submit" class="btn btn-danger">حذف</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div> 

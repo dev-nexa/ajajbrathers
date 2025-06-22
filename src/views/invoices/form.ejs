@@ -1,0 +1,187 @@
+<div class="card shadow">
+  <div class="card-header">
+    <h4 class="mb-0"><%= locals.invoice ? 'تعديل فاتورة' : 'إنشاء فاتورة جديدة' %></h4>
+  </div>
+  <div class="card-body">
+    <form action="<%= locals.invoice ? `/invoices/${invoice.id}/edit` : '/invoices/create' %>" method="POST" id="invoiceForm">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="customer_name" class="form-label">اسم العميل</label>
+          <input type="text" class="form-control" id="customer_name" name="customer_name" 
+                 value="<%= locals.invoice ? invoice.customer_name : '' %>" required>
+        </div>
+        
+        <div class="col-md-6">
+          <label for="date" class="form-label">التاريخ</label>
+          <input type="date" class="form-control" id="date" name="date" 
+                 value="<%= locals.invoice ? new Date(invoice.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] %>" required>
+        </div>
+
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">المنتجات</h5>
+              <button type="button" class="btn btn-primary btn-sm" onclick="addItem()">إضافة منتج</button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table" id="itemsTable">
+                  <thead>
+                    <tr>
+                      <th>المنتج</th>
+                      <th>الكمية</th>
+                      <th>السعر</th>
+                      <th>الإجمالي</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% if (locals.invoice && invoice.items) { %>
+                      <% invoice.items.forEach((item, index) => { %>
+                        <tr>
+                          <td>
+                            <select class="form-select item-select" name="items[<%= index %>][item_id]" required>
+                              <option value="">اختر المنتج</option>
+                              <% inventory.forEach(inv => { %>
+                                <option value="<%= inv.id %>" 
+                                        data-price="<%= inv.price %>"
+                                        <%= item.item_id === inv.id ? 'selected' : '' %>>
+                                  <%= inv.name %>
+                                </option>
+                              <% }); %>
+                            </select>
+                          </td>
+                          <td>
+                            <input type="number" class="form-control item-quantity" 
+                                   name="items[<%= index %>][quantity]" 
+                                   value="<%= item.quantity %>" min="1" required
+                                   onchange="updateTotal(this)">
+                          </td>
+                          <td>
+                            <input type="number" class="form-control item-price" 
+                                   name="items[<%= index %>][price]" 
+                                   value="<%= item.price %>" min="0" step="0.001" required
+                                   onchange="updateTotal(this)">
+                          </td>
+                          <td>
+                            <input type="number" class="form-control item-total" 
+                                   value="<%= (item.quantity * item.price).toFixed(2) %>" readonly>
+                          </td>
+                          <td>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeItem(this)">حذف</button>
+                          </td>
+                        </tr>
+                      <% }); %>
+                    <% } %>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="3" class="text-end"><strong>الإجمالي:</strong></td>
+                      <td>
+                        <input type="number" class="form-control" id="totalAmount" name="total_amount" 
+                               value="<%= locals.invoice ? invoice.total_amount : '0.00' %>" readonly>
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="notes" class="form-label">ملاحظات</label>
+          <textarea class="form-control" id="notes" name="notes" rows="3"><%= locals.invoice ? invoice.notes : '' %></textarea>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex justify-content-end gap-2">
+            <a href="/invoices" class="btn btn-secondary">إلغاء</a>
+            <button type="submit" class="btn btn-primary">
+              <%= locals.invoice ? 'حفظ التغييرات' : 'إنشاء الفاتورة' %>
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let itemIndex = <%= locals.invoice && invoice.items ? invoice.items.length : 0 %>;
+
+  function addItem() {
+    const tbody = document.querySelector('#itemsTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <select class="form-select item-select" name="items[${itemIndex}][item_id]" required>
+          <option value="">اختر المنتج</option>
+          <% inventory.forEach(inv => { %>
+            <option value="<%= inv.id %>" data-price="<%= inv.price %>"><%= inv.name %></option>
+          <% }); %>
+        </select>
+      </td>
+      <td>
+        <input type="number" class="form-control item-quantity" 
+               name="items[${itemIndex}][quantity]" value="1" min="1" required
+               onchange="updateTotal(this)">
+      </td>
+      <td>
+        <input type="number" class="form-control item-price" 
+               name="items[${itemIndex}][price]" value="0.00" min="0" step="0.001" required
+               onchange="updateTotal(this)">
+      </td>
+      <td>
+        <input type="number" class="form-control item-total" value="0.00" readonly>
+      </td>
+      <td>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeItem(this)">حذف</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    itemIndex++;
+  }
+
+  function removeItem(button) {
+    button.closest('tr').remove();
+    updateGrandTotal();
+  }
+
+  function updateTotal(input) {
+    const tr = input.closest('tr');
+    const quantity = parseFloat(tr.querySelector('.item-quantity').value) || 0;
+    const price = parseFloat(tr.querySelector('.item-price').value) || 0;
+    const total = quantity * price;
+    tr.querySelector('.item-total').value = total.toFixed(2);
+    updateGrandTotal();
+  }
+
+  function updateGrandTotal() {
+    const totals = Array.from(document.querySelectorAll('.item-total'))
+      .map(input => parseFloat(input.value) || 0);
+    const grandTotal = totals.reduce((sum, total) => sum + total, 0);
+    document.getElementById('totalAmount').value = grandTotal.toFixed(2);
+  }
+
+  // Initialize price when item is selected
+  document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('item-select')) {
+      const option = e.target.options[e.target.selectedIndex];
+      const price = option.dataset.price || 0;
+      const tr = e.target.closest('tr');
+      tr.querySelector('.item-price').value = price;
+      updateTotal(tr.querySelector('.item-price'));
+    }
+  });
+
+  // Form validation
+  document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+    const items = document.querySelectorAll('#itemsTable tbody tr');
+    if (items.length === 0) {
+      e.preventDefault();
+      alert('يجب إضافة منتج واحد على الأقل');
+    }
+  });
+</script> 

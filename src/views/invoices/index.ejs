@@ -1,0 +1,259 @@
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-invoice"></i> الفواتير
+                </h2>
+            </div>
+
+            <!-- Filters -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <form id="filterForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">التاريخ</label>
+                            <input type="text" class="form-control datepicker" name="date" value="<%= locals.filters?.date || '' %>" placeholder="يوم/شهر/سنة">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">العميل</label>
+                            <input type="text" class="form-control" name="customer" value="<%= locals.filters?.customer || '' %>" placeholder="اسم العميل">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> بحث
+                            </button>
+                            <button type="button" class="btn btn-outline-success" id="filterTodayBtn">
+                                <i class="fas fa-calendar-day me-1"></i> عرض نتائج اليوم
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="clearFiltersBtn">
+                                <i class="fas fa-redo me-1"></i> تحديث
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Invoices Table -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>التاريخ</th>
+                                    <th>اسم العميل</th>
+                                    <th>اسم السائق</th>
+                                    <th>الكمية الإجمالية</th>
+                                    <th>الوزن الإجمالي</th>
+                                    <th>ملاحظات</th>
+                                    <th class="d-print-none">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (invoices && invoices.length > 0) { %>
+                                    <% invoices.forEach((invoice, index) => { %>
+                                        <tr>
+                                            <td><%= index + 1 %></td>
+                                            <td><%= invoice.invoice_number %></td>
+                                            <td><%= new Date(invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
+                                            <td><%= invoice.customer_name %></td>
+                                            <td><%= invoice.driver_name || '-' %></td>
+                                            <td><%= invoice.total_quantity_tanks ? Number(invoice.total_quantity_tanks).toFixed(2) : '0.00' %></td>
+                                            <td><%= invoice.total_quantity_liters ? Number(invoice.total_quantity_liters).toFixed(2) : '0.00' %></td>
+                                            <td><%= invoice.notes || '-' %></td>
+                                            <td class="d-print-none">
+                                                <div class="btn-group">
+                                                    <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-info me-1" title="معاينة">
+                                                        <i class="bi bi-eye-fill"></i>
+                                                    </a>
+                                                    <% if (user && user.role === 'editor') { %>
+                                                        <button type="button" class="btn btn-sm btn-danger delete-invoice" data-id="<%= invoice.id %>" title="حذف">
+                                                            <i class="bi bi-trash-fill"></i>
+                                                        </button>
+                                                    <% } %>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="fas fa-file-invoice fa-2x mb-3"></i>
+                                                <p class="mb-0">لا توجد فواتير</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف الفاتورة رقم <span id="invoiceNumber" class="fw-bold"></span>؟
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    إلغاء
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash me-1"></i>
+                    حذف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Flatpickr on the date input
+document.addEventListener('DOMContentLoaded', function() {
+    const datepickerInput = flatpickr(".datepicker", {
+        locale: "ar",
+        dateFormat: "d/m/Y",
+        altFormat: "Y-m-d",
+        altInput: false,
+        allowInput: true
+    });
+
+    // Set the initial date value in Flatpickr if a filter date exists
+    <% if (locals.filters?.date) { %>
+        try {
+            const [year, month, day] = '<%= locals.filters.date %>'.split('-').map(Number);
+            const initialDate = new Date(year, month - 1, day);
+            datepickerInput.setDate(initialDate, true);
+        } catch (e) {
+            console.error("Error setting Flatpickr date:", e);
+        }
+    <% } %>
+
+    // Initialize filter today button
+    const filterTodayBtn = document.getElementById('filterTodayBtn');
+    if (filterTodayBtn) {
+        filterTodayBtn.addEventListener('click', filterToday);
+    }
+
+    // Initialize clear filters button
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+
+    // Initialize reset counter form
+    const resetCounterForm = document.getElementById('resetCounterForm');
+    if (resetCounterForm) {
+        resetCounterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('هل أنت متأكد من إعادة تعيين عداد الفواتير؟')) {
+                this.submit();
+            }
+        });
+    }
+
+    // Delete invoice functionality
+    let invoiceToDelete = null;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteInvoiceModal'));
+
+    // Handle delete button clicks
+    document.querySelector('.table').addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-invoice');
+        if (!deleteBtn) return;
+        
+        const invoiceId = deleteBtn.dataset.id;
+        const invoiceNumber = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent;
+        
+        invoiceToDelete = invoiceId;
+        document.getElementById('invoiceNumber').textContent = invoiceNumber;
+        deleteModal.show();
+    });
+
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (!invoiceToDelete) return;
+        
+        fetch(`/invoices/${invoiceToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            deleteModal.hide();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'حدث خطأ أثناء حذف الفاتورة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء حذف الفاتورة');
+            deleteModal.hide();
+        });
+    });
+});
+
+// Handle filter form submission to format date correctly
+document.getElementById('filterForm').addEventListener('submit', function(event) {
+    const dateInput = this.querySelector('input[name="date"]');
+    if (dateInput && dateInput._flatpickr && dateInput._flatpickr.selectedDates.length > 0) {
+        const selectedDate = dateInput._flatpickr.selectedDates[0];
+        const year = selectedDate.getFullYear();
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = selectedDate.getDate().toString().padStart(2, '0');
+        const yyyyMMddDate = `${year}-${month}-${day}`;
+        dateInput.value = yyyyMMddDate;
+    }
+});
+
+// Filter today's results
+function filterToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="date"]').value = today;
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+// Clear all filters
+function clearFilters() {
+    const datepicker = document.querySelector('input[name="date"]')._flatpickr;
+    if (datepicker) {
+        datepicker.clear();
+    }
+    document.querySelector('input[name="customer"]').value = '';
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+</script>
+
+<style>
+@media print {
+    .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .card-body { padding: 0 !important; }
+    .table { font-size: 0.9em; }
+    .table td, .table th { padding: 0.5rem !important; }
+    body { background: white !important; }
+    .container { max-width: 100% !important; }
+}
+</style> 

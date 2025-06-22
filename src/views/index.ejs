@@ -1,0 +1,65 @@
+<div class="container">
+  <br>
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow mb-4">
+        <div class="card-header">
+          <h4 class="mb-0">مرحباً بك في نظام إدارة المختبر</h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            <!-- المخزون -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-box-seam fs-1 text-primary mb-3"></i>
+                  <h5 class="card-title">المخزون</h5>
+                  <p class="card-text">إدارة المخزون وتتبع العينات</p>
+                  <a href="/inventory" class="btn btn-primary">عرض المخزون</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- الفواتير -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-receipt fs-1 text-success mb-3"></i>
+                  <h5 class="card-title">الفواتير</h5>
+                  <p class="card-text">إدارة الفواتير الصادرة</p>
+                  <a href="/invoices" class="btn btn-success">عرض الفواتير</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- شهادات التحليل -->
+            <div class="col-md-6 col-lg-3">
+              <div class="card h-100">
+                <div class="card-body text-center">
+                  <i class="bi bi-file-earmark-text fs-1 text-info mb-3"></i>
+                  <h5 class="card-title">شهادات التحليل</h5>
+                  <p class="card-text">إدارة شهادات تحليل العينات</p>
+                  <a href="/certificates" class="btn btn-success">عرض الشهادات</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- المستخدمين -->
+            <% if (locals.user && user.role === 'editor') { %>
+              <div class="col-md-6 col-lg-3">
+                <div class="card h-100">
+                  <div class="card-body text-center">
+                    <i class="bi bi-people fs-1 text-warning mb-3"></i>
+                    <h5 class="card-title">المستخدمين</h5>
+                    <p class="card-text">إدارة المستخدمين والصلاحيات</p>
+                    <a href="/users" class="btn btn-success">عرض المستخدمين</a>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,530 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+
+
+<!-- Print Header using Table Layout -->
+<div class="d-none d-print-block" style="width: 100%; direction: rtl; margin-bottom: 5px;">
+  <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+    <tr>
+
+      <!-- Right side -->
+      <td style="width: 33%; text-align: right; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4;">
+        <div>مؤسسة عجاج أخوان التجارية</div>
+        <div>لإنتاج وتعبئة المواد الغذائية</div>
+        <div>وتجارة زيت الزيتون البكر</div>
+        <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+      </td>
+
+      <!-- Center: logo -->
+      <td style="width: 34%; text-align: center;">
+        <img src="/public/images/nexa.png" alt="شعار" style="width: 100px; height: 100px;">
+      </td>
+
+      <!-- Left side -->
+      <td style="width: 33%; text-align: left; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4;">
+        <div>Ajaj Brothers Commercial Foundation</div>
+        <div>For Food Production and Packaging</div>
+        <div>And Virgin Olive Oil Trade</div>
+        <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+      </td>
+
+    </tr>
+  </table>
+</div>
+
+<hr class="d-none d-print-block my-2">
+<!-- Certificate Title in Center -->
+<div class="d-none d-print-block my-2" style="text-align: center;">
+  <div style="font-size: 12pt; font-weight: bold; color: #333; margin-bottom: 5px;">فاتورة زيت زيتون رقم (<%= invoice.invoice_number %>)</div>
+</div>
+
+<div class="container mt-2">
+  <div class="row">
+    <div class="col-12">
+      <!-- Web Header (not printed) -->
+      <div class="d-flex justify-content-between align-items-center mb-2 d-print-none">
+        <h2 class="mb-0" style="font-size: 1.2rem;">
+          <i class="fas fa-file-invoice"></i> فاتورة رقم <%= invoice.invoice_number %>
+        </h2>
+        <div>
+          <button data-action="print" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-print me-1"></i> طباعة
+          </button>
+          <button id="exportPdfBtn" class="btn btn-outline-success btn-sm ms-1">
+            <i class="fas fa-file-pdf me-1"></i> تصدير PDF
+          </button>
+          <a href="/invoices" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-right me-1"></i> العودة للفواتير
+          </a>
+        </div>
+      </div>
+      <br>
+
+      <!-- Invoice Info Table -->
+      <div class="row mb-3 d-print-no-shadow">
+        <div class="col-12">
+          <table class="table-custom table-bordered" style="width: 100%; direction: rtl; font-size: 9pt;">
+            <tbody>
+              <tr>
+                <td style="width: 33.33%; padding: 6pt;">
+                  <h6 style="font-size: 10pt; font-weight: bold; margin-bottom: 4pt;">بيانات
+                    العميل</h6>
+                  <p style="margin: 2pt 0;"><strong>الاسم:</strong>
+                    <%= invoice.customer_name %>
+                  </p>
+                </td>
+                <td style="width: 33.33%; padding: 6pt;">
+                  <h6 style="font-size: 10pt; font-weight: bold; margin-bottom: 4pt;">بيانات
+                    السائق</h6>
+                  <p style="margin: 2pt 0;"><strong>الاسم:</strong>
+                    <%= invoice.driver_name %>
+                  </p>
+                </td>
+                <td style="width: 33.33%; padding: 6pt;">
+                  <h6 style="font-size: 10pt; font-weight: bold; margin-bottom: 4pt;">بيانات الفاتورة
+                  </h6>
+                  <p style="margin: 2pt 0;"><strong>رقم الفاتورة:</strong>
+                    <%= invoice.invoice_number %>
+                  </p>
+                  <p style="margin: 2pt 0;"><strong>التاريخ:</strong>
+                    <%= new Date(invoice.date).toLocaleDateString('en-GB', { year: 'numeric' , month: '2-digit' ,
+                      day: '2-digit' }) %>
+                  </p>
+                  <% if (invoice.notes) { %>
+                    <p style="margin: 2pt 0;"><strong>ملاحظات:</strong>
+                      <%= invoice.notes %>
+                    </p>
+                    <% } %>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <br class="d-none d-print-block">
+
+      <!-- Invoice Items Table -->
+      <div class="card mb-2" style="border: none;">
+        <div class="card-body py-1 px-1">
+          <div class="table-responsive" style="overflow-x: visible;">
+            <table class="table-custom table-bordered text-center align-middle mb-0" style="font-size: 9pt; width: 100%; direction: rtl;">
+              <thead>
+                <tr>
+                  <th style="width: 3%; padding: 6pt 4pt;">#</th>
+                  <th style="width: 10%; padding: 6pt 4pt;">رقم العينة</th>
+                  <th style="width: 7%; padding: 6pt 4pt;">الكمية</th>
+                  <th style="width: 10%; padding: 6pt 4pt;">الوزن الصافي</th>
+                  <th style="width: 7%; padding: 6pt 4pt;">درجة الحموضة</th>
+                  <th style="width: 10%; padding: 6pt 4pt;">رقم البيروكسيد</th>
+                  <th style="width: 10%; padding: 6pt 4pt;">امتصاص 232</th>
+                  <th style="width: 10%; padding: 6pt 4pt;">امتصاص 266</th>
+                  <th style="width: 11%; padding: 6pt 4pt;">امتصاص 270</th>
+                  <th style="width: 11%; padding: 6pt 4pt;">امتصاص 274</th>
+                  <th style="width: 11%; padding: 6pt 4pt;">Delta K</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% 
+                  let totalQuantity = 0;
+                  let totalWeight = 0;
+                  let weightedPH = 0;
+                  let weightedPeroxide = 0;
+                  let weighted232 = 0;
+                  let weighted266 = 0;
+                  let weighted270 = 0;
+                  let weighted274 = 0;
+                  let weightedDeltaK = 0;
+                  
+                  items.forEach((item, index) => { 
+                    // Convert values to numbers and accumulate totals
+                    const quantity = Number(item.quantity) || 0;
+                    const weight = Number(item.net_weight) || 0;
+                    
+                    totalQuantity += quantity;
+                    totalWeight += weight;
+                    
+                    // Calculate weighted sums using weight as the weight factor
+                    weightedPH += weight * (Number(item.ph) || 0);
+                    weightedPeroxide += weight * (Number(item.peroxide_value) || 0);
+                    weighted232 += weight * (Number(item.absorption_232) || 0);
+                    weighted266 += weight * (Number(item.absorption_266) || 0);
+                    weighted270 += weight * (Number(item.absorption_270) || 0);
+                    weighted274 += weight * (Number(item.absorption_274) || 0);
+                    weightedDeltaK += weight * (Number(item.delta_k) || 0);
+                %>
+                  <tr>
+                    <td style="padding: 6pt 4pt;"><%= index + 1 %></td>
+                    <td style="padding: 6pt 4pt;"><%= item.sample_number %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(quantity) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(weight) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.ph) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.peroxide_value) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.absorption_232) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.absorption_266) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.absorption_270) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.absorption_274) %></td>
+                    <td style="padding: 6pt 4pt;"><%= formatNumberDisplay(item.delta_k) %></td>
+                  </tr>
+                <% }); %>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" style="text-align: center; padding: 6pt 4pt;"><strong>المجموع</strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalQuantity) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight) %></strong></td>
+                  <td colspan="7" style="padding: 6pt 4pt;"></td>
+                </tr>
+                <tr>
+                  <td colspan="4" style="text-align: center; padding: 6pt 4pt;"><strong>المتوسط المرجح</strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPH / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weightedPeroxide / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weighted232 / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weighted266 / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weighted270 / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weighted274 / totalWeight) : 0) %></strong></td>
+                  <td style="padding: 6pt 4pt;"><strong><%= formatNumberDisplay(totalWeight ? (weightedDeltaK / totalWeight) : 0) %></strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty space for web view -->
+      <div class="d-print-none mb-2"></div>
+
+      <!-- Print-only Signatures (at bottom) -->
+      <div class="print-signatures d-none d-print-block">
+        <div style="margin-top: 1cm;"></div>
+        <div class="row text-center">
+          <div class="col-4">
+            <p class="mb-1" style="font-size: 10pt;"><strong>مدير المختبر</strong></p>
+            <div class="signature-line"></div>
+          </div>
+          <div class="col-4">
+            <p class="mb-1" style="font-size: 10pt;"><strong>مدير المخزن</strong></p>
+            <div class="signature-line"></div>
+          </div>
+          <div class="col-4">
+            <p class="mb-1" style="font-size: 10pt;"><strong>العميل</strong></p>
+            <div class="signature-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Print-only Footer (once at bottom) -->
+      <div class="print-footer d-none d-print-block text-center" style="margin-top: 1cm; font-size: 8.5pt; color: #666;">
+        <hr style="border-color: #ffffff; margin: 4px 0;">
+        <!-- بيانات الاتصال والمعلومات الثانوية -->
+        سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10
+        <br>
+        0940500511 – 0988111127 | ajajbrothers@gmail.com
+        <br>
+        جميع الحقوق محفوظة © 2025 نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA للبرمجيات
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDF Export Modal -->
+<div id="pdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-file-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+      <div class="modal-body text-center">
+        <div class="mb-3">
+          <input type="text" id="pdfLinkInput" class="form-control text-center" readonly style="direction:ltr; font-size:0.95em;" />
+        </div>
+        <div class="d-flex justify-content-center gap-2 mb-2">
+          <button id="copyPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i class="fas fa-copy me-1"></i> نسخ الرابط</button>
+          <a id="whatsappShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i class="fab fa-whatsapp me-1"></i> ارسال عبر واتساب</a>
+        </div>
+        <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الفاتورة مباشرة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Print handling function
+function handlePrint() {
+    // Add printing class to body
+    document.body.classList.add('printing');
+    
+    // Hide elements that shouldn't be printed
+    const noPrintElements = document.querySelectorAll('.d-print-none');
+    noPrintElements.forEach(el => el.style.display = 'none');
+    
+    // Show print-only elements
+    const printOnlyElements = document.querySelectorAll('.d-none.d-print-block');
+    printOnlyElements.forEach(el => el.style.display = 'block');
+    
+    // Add a small delay to ensure styles are applied
+    setTimeout(() => {
+        window.print();
+        
+        // Reset elements after printing
+        setTimeout(() => {
+            document.body.classList.remove('printing');
+            noPrintElements.forEach(el => el.style.display = '');
+            printOnlyElements.forEach(el => el.style.display = '');
+        }, 1000);
+    }, 100);
+}
+
+// Add event listener when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.querySelector('[data-action="print"]');
+    if (printButton) {
+        printButton.addEventListener('click', handlePrint);
+    }
+
+    const exportBtn = document.getElementById('exportPdfBtn');
+    const modal = new bootstrap.Modal(document.getElementById('pdfExportModal'));
+    const pdfLinkInput = document.getElementById('pdfLinkInput');
+    const copyBtn = document.getElementById('copyPdfLinkBtn');
+    const whatsappBtn = document.getElementById('whatsappShareBtn');
+
+    exportBtn?.addEventListener('click', async function() {
+      exportBtn.disabled = true;
+      exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+      try {
+        const res = await fetch(`/invoices/<%= invoice.id %>/pdf`);
+        const data = await res.json();
+        if (data.success && data.url) {
+          pdfLinkInput.value = data.url;
+          whatsappBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+          modal.show();
+        } else {
+          alert(data.message || 'حدث خطأ أثناء التصدير');
+        }
+      } catch (e) {
+        alert('حدث خطأ أثناء الاتصال بالخادم');
+      }
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = '<i class="fas fa-file-pdf me-1"></i> تصدير PDF';
+    });
+
+    copyBtn?.addEventListener('click', function() {
+      pdfLinkInput.select();
+      document.execCommand('copy');
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> تم النسخ!';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<i class="fas fa-copy me-1"></i> نسخ الرابط';
+      }, 1500);
+    });
+});
+</script>
+
+<style>
+@media print {
+  body, html {
+    background: #ffffff !important;
+  }
+
+  * {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 1cm;
+  }
+
+  html, body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    direction: rtl;
+    text-align: right;
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-size: 10pt;
+    font-weight: 500 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  /* تحسين الخط العربي للعناوين */
+  h1, h2, h3, h4, h5, h6, th, strong {
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 700 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  /* Table styling with nicer borders and increased row height */
+  .table-responsive {
+    overflow-x: visible !important;
+  }
+  .table-custom {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    margin-bottom: 0.5cm;
+    direction: rtl;
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  .table-custom th,
+  .table-custom td {
+    border: 1px solid #444 !important;
+    padding: 6pt 4pt !important; /* Increased vertical padding for taller rows */
+    background-clip: padding-box;
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 500 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+  .table-custom th {
+    background-color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 9pt !important;
+  }
+  .table-custom {
+    border: 1px solid #ffffff !important;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { page-break-inside: avoid; }
+
+  /* Remove container margins */
+  .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  .card-body {
+    padding: 0 !important;
+  }
+
+  /* Show header, footer, signatures */
+  .print-header, .print-footer, .print-signatures {
+    display: block !important;
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  .d-print-none { display: none !important; }
+
+  /* Signature line style */
+  .signature-line {
+    border-top: 1px solid #000;
+    width: 70%;
+    margin: 0.7cm auto 0.2cm auto;
+    height: 1px;
+  }
+
+  /* Print header HR */
+  .print-header hr {
+    margin: 2px 0 6px 0;
+    border: 0.5px solid #bbb;
+  }
+
+  /* Remove shadows and borders when printing */
+  .print-no-shadow {
+    box-shadow: none !important;
+  }
+
+  /* Hide website footer from print */
+  .website-footer {
+    display: none !important;
+  }
+
+  body.printing {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure table fits on page */
+  .table-custom {
+    width: 100% !important;
+    margin: 0 !important;
+    page-break-inside: auto !important;
+  }
+
+  /* Force background colors in print */
+  .table-custom tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure headers print on each page */
+  thead {
+    display: table-header-group !important;
+  }
+
+  /* Prevent rows from breaking across pages */
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  /* تحسين مظهر النصوص العربية */
+  p, div, span {
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 500 !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+
+  /* تحسين مظهر الأرقام */
+  .formatNumberDisplay {
+    font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-weight: 600 !important;
+  }
+}
+
+.fw-bold {
+  font-weight: bold !important;
+}
+
+/* إضافة خطوط عربية للويب أيضاً */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+
+@media print {
+  /* تحسين وضوح الخطوط في الطباعة */
+  * {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-feature-settings: "liga" 1, "kern" 1 !important;
+    font-feature-settings: "liga" 1, "kern" 1 !important;
+  }
+}
+</style>
+

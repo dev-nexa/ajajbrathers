@@ -1,0 +1,21 @@
+<div class="container">
+  <div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+      <div class="card shadow">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">خطأ</h4>
+        </div>
+        <div class="card-body text-center">
+          <h5 class="card-title mb-4"><%= message %></h5>
+          <% if (error && error.stack && process.env.NODE_ENV === 'development') { %>
+            <div class="alert alert-danger">
+              <pre class="mb-0"><%= error.stack %></pre>
+            </div>
+          <% } %>
+          <a href="javascript:history.back()" class="btn btn-primary">العودة للخلف</a>
+          <a href="/" class="btn btn-secondary">الصفحة الرئيسية</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 
