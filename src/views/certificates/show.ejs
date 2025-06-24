@@ -1,0 +1,517 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+    <div class="container-fluid mt-4">
+        <div class="card shadow">
+            <div
+                class="card-header bg-success text-white d-flex justify-content-between align-items-center d-print-none">
+                <h5 class="mb-0"><i class="fas fa-certificate me-2"></i>
+                    شهادة تحليل عينة زيت زيتون رقم (<%= certificate.certificate_number %>)
+                </h5>
+                <% if (typeof user !=='undefined' && user) { %>
+                    <div class="d-flex align-items-center gap-2 d-print-none">
+                        <button type="button" class="btn btn-light btn-sm print-button">
+                            <i class="fas fa-print"></i> طباعة
+                        </button>
+                        <button id="exportPdfBtn" class="btn btn-success btn-sm">
+                            <i class="fas fa-file-pdf me-1"></i> تصدير PDF
+                        </button>
+                    </div>
+                    <% } %>
+            </div>
+            <div class="card-body">
+                <!-- Print Header using Table Layout -->
+                <div class="d-none d-print-block" style="width: 100%; direction: rtl; margin-bottom: 5px;">
+                    <table style="width: 100%; table-layout: fixed; border-collapse: collapse;">
+                        <tr>
+                            <!-- Right side -->
+                            <td
+                                style="width: 33%; text-align: right; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4;">
+                                <div>مؤسسة عجاج أخوان التجارية</div>
+                                <div>لإنتاج وتعبئة المواد الغذائية</div>
+                                <div>وتجارة زيت الزيتون البكر</div>
+                                <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+                            </td>
+
+                            <!-- Center: logo -->
+                            <td style="width: 34%; text-align: center;">
+                                <img src="/public/images/nexa.png" alt="شعار" style="width: 100px; height: 100px;">
+                            </td>
+
+                            <!-- Left side -->
+                            <td
+                                style="width: 33%; text-align: left; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4;">
+                                <div>Ajaj Brothers Commercial Foundation</div>
+                                <div>For Food Production and Packaging</div>
+                                <div>And Virgin Olive Oil Trade</div>
+                                <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+                            </td>
+
+                        </tr>
+                    </table>
+                </div>
+
+                <hr class="d-none d-print-block my-2">
+                <!-- Certificate Title in Center -->
+                <div class="d-none d-print-block my-2" style="text-align: center;">
+                    <div style="font-size: 12pt; font-weight: bold; color: #333; margin-bottom: 5px;">شهادة تحليل زيت زيتون رقم (<%= certificate.certificate_number %>)</div>
+                </div>
+
+                <!-- Customer and Certificate Info -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <table class="table-custom table-bordered" style="width: 100%; direction: rtl; font-size: 9pt;">
+                            <tbody>
+                                <tr>
+                                    <td style="width: 50%; padding: 6pt;">
+                                        <h6 style="font-size: 10pt; font-weight: bold; margin-bottom: 4pt;">بيانات
+                                            العميل/المورد</h6>
+                                        <p style="margin: 2pt 0;"><strong>الاسم:</strong>
+                                            <%= certificate.customer_name %>
+                                        </p>
+                                        <% if (certificate.customer_phone) { %>
+                                            <p style="margin: 2pt 0;"><strong>رقم الهاتف:</strong>
+                                                <%= certificate.customer_phone %>
+                                            </p>
+                                            <% } %>
+                                                <% if (certificate.customer_address) { %>
+                                                    <p style="margin: 2pt 0;"><strong>العنوان:</strong>
+                                                        <%= certificate.customer_address %>
+                                                    </p>
+                                                    <% } %>
+                                    </td>
+                                    <td style="width: 50%; padding: 6pt;">
+                                        <h6 style="font-size: 10pt; font-weight: bold; margin-bottom: 4pt;">بيانات
+                                            الشهادة
+                                        </h6>
+                                        <p style="margin: 2pt 0;"><strong>رقم الشهادة:</strong>
+                                            <%= certificate.certificate_number %>
+                                        </p>
+                                        <p style="margin: 2pt 0;"><strong>التاريخ:</strong>
+                                            <%= new Date(certificate.date).toLocaleDateString('en-GB', { year: 'numeric'
+                                                , month: '2-digit' , day: '2-digit' }) %>
+                                        </p>
+                                        <% if (certificate.notes) { %>
+                                            <p style="margin: 2pt 0;"><strong>ملاحظات:</strong>
+                                                <%= certificate.notes %>
+                                            </p>
+                                            <% } %>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Alert Info (non-print) -->
+                <div class="mb-3 d-print-none">
+                    <div class="alert alert-info py-2">
+                        <strong>العنوان :</strong> سوريا - حماة - ، أوتستراد دمشق حلب الدولي - هاتف: 0940500511 -
+                        0988111127
+                        - بريد: ajajbrothers@gmail.com - س.ت 10369 - س.ص 10
+                    </div>
+                </div>
+
+                <!-- Main Table -->
+                <div class="card mb-2 print-no-shadow" style="border: none;">
+                    <div class="card-body py-1 px-1">
+                        <div class="table-responsive" style="overflow-x: visible;">
+                            <table class="table-custom table-bordered text-center align-middle mb-0"
+                                style="font-size: 9pt; width: 100%; direction: rtl;">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 3%; padding: 6pt 4pt;">#</th>
+                                        <th style="width: 6%; padding: 6pt 4pt;">الكمية</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">وحدة تعبئة</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">وزن تعبئة</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">وزن إجمالي</th>
+                                        <th style="width: 6%; padding: 6pt 4pt;">درجة الحموضة</th>
+                                        <th style="width: 8%; padding: 6pt 4pt;">رقم البيروكسيد</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">232</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">266</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">270</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">274</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">دلتا k</th>
+                                        <th style="width: 7%; padding: 6pt 4pt;">ستيغما ستاديين</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% certificate.items.forEach(function(item, index) { %>
+                                        <tr>
+                                            <td style="padding: 4pt;">
+                                                <%= index + 1 %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.quantity) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= item.packaging_unit %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.packaging_weight) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.total_weight) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.ph) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.peroxide) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.abs_232) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.abs_266) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.abs_270) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.abs_274) %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.delta_k) || '' %>
+                                            </td>
+                                            <td style="padding: 4pt;">
+                                                <%= formatNumberDisplay(item.stigmastadiene) %>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="1" style="text-align: center; padding: 6pt 4pt;">
+                                            <strong>المجموع</strong>
+                                        </td>
+                                        <td style="padding: 6pt 4pt;"><strong>
+                                                <%= certificate.total_quantity ?
+                                                    formatNumberDisplay(certificate.total_quantity) : '0.00' %>
+                                            </strong></td>
+                                        <td style="padding: 6pt 4pt;"></td>
+                                        <td style="padding: 6pt 4pt;"></td>
+                                        <td style="padding: 6pt 4pt;"><strong>
+                                                <%= certificate.total_weight ?
+                                                    formatNumberDisplay(certificate.total_weight) : '0.00' %>
+                                            </strong></td>
+                                        <td colspan="8" style="padding: 6pt 4pt;"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signatures Section -->
+                <div class="print-signatures d-none d-print-block">
+                    <div style="margin-top: 1cm;"></div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <p class="mb-1" style="font-size: 10pt;"><strong>مدير المختبر</strong></p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="col-4">
+                            <p class="mb-1" style="font-size: 10pt;"><strong>المحلل</strong></p>
+                            <div class="signature-line"></div>
+                        </div>
+                        <div class="col-4">
+                            <p class="mb-1" style="font-size: 10pt;"><strong>العميل</strong></p>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <br>
+                <br>
+
+                <!-- QR Code - Only visible in print view -->
+                <div class="d-none d-print-block text-center" style="margin-top: 0.5cm;">
+                    <% if (typeof qrCode !=='undefined' && qrCode) { %>
+                        <img src="<%= qrCode %>" alt="QR Code" style="width: 100px; height: 100px;">
+                        <div style="font-size: 8pt; color: #666; margin-top: 4px;">
+                            امسح الرمز لمشاهدة الشهادة إلكترونياً
+                        </div>
+                        <% } %>
+                </div>
+
+                <!-- Print Footer -->
+                <div class="print-footer d-none d-print-block text-center"
+                    style="margin-top: 1cm; font-size: 8.5pt; color: #666;">
+                    <hr style="border-color: #ccc; margin: 4px 0;">
+                    <!-- بيانات الاتصال والمعلومات الثانوية -->
+                    سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10
+                    <br>
+                    0940500511 – 0988111127 | ajajbrothers@gmail.com
+                    <br>
+                    جميع الحقوق محفوظة © 2025 نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA للبرمجيات
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Export Modal -->
+    <div id="pdfExportModal" class="modal fade" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-pdf me-2 text-success"></i> تم إنشاء ملف PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="mb-3">
+                        <input type="text" id="pdfLinkInput" class="form-control text-center" readonly
+                            style="direction:ltr; font-size:0.95em;" />
+                    </div>
+                    <div class="d-flex justify-content-center gap-2 mb-2">
+                        <button id="copyPdfLinkBtn" class="btn btn-outline-primary btn-sm"><i
+                                class="fas fa-copy me-1"></i>
+                            نسخ الرابط</button>
+                        <button id="openPdfLinkBtn" class="btn btn-outline-info btn-sm"><i
+                                class="fas fa-external-link-alt me-1"></i> فتح الرابط</button>
+                        <a id="whatsappShareBtn" class="btn btn-outline-success btn-sm" target="_blank"><i
+                                class="fab fa-whatsapp me-1"></i> ارسال عبر واتساب</a>
+                    </div>
+                    <div class="alert alert-success py-2 mb-0">يمكنك مشاركة الرابط مع أي شخص لتحميل الشهادة مباشرة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* إضافة خطوط عربية للويب أيضاً */
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Amiri:wght@400;500;600;700&display=swap');
+
+        /* Screen Styles */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table-custom {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .table-custom th,
+        .table-custom td {
+            border: 1px solid #000;
+            white-space: nowrap;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #000;
+            width: 80%;
+            margin: 10px auto;
+        }
+
+        /* Print Styles */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1cm;
+            }
+
+            .card,
+            .card-body {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            html,
+            body {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                direction: rtl;
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-size: 10pt;
+                font-weight: 500 !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+            }
+
+            /* تحسين الخط العربي للعناوين */
+            h1, h2, h3, h4, h5, h6, th, strong {
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-weight: 700 !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+            }
+
+            .container-fluid {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 5px !important;
+                margin: 0 !important;
+            }
+
+            .card {
+                border: none !important;
+                box-shadow: none !important;
+            }
+
+            .card-body {
+                padding: 0 !important;
+            }
+
+            .print-no-shadow {
+                box-shadow: none !important;
+            }
+
+            .table-responsive {
+                overflow-x: visible !important;
+            }
+
+            .table-custom {
+                border-collapse: collapse !important;
+                width: 100% !important;
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-weight: 500 !important;
+            }
+
+            .table-custom th,
+            .table-custom td {
+                border: 1px solid #000 !important;
+                padding: 4pt !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                white-space: nowrap !important;
+                font-size: 8pt !important;
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-weight: 500 !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+            }
+
+            .table-custom th {
+                background-color: #f2f2f2 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                font-weight: 700 !important;
+            }
+
+            .d-print-none {
+                display: none !important;
+            }
+
+            .d-print-block {
+                display: block !important;
+            }
+
+            .signature-line {
+                border-bottom: 1px solid #000 !important;
+                width: 80% !important;
+                margin: 10px auto !important;
+            }
+
+            /* تحسين مظهر النصوص العربية */
+            p, div, span {
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-weight: 500 !important;
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+            }
+
+            /* تحسين مظهر الأرقام */
+            .formatNumberDisplay {
+                font-family: 'Cairo', 'Amiri', 'Noto Naskh Arabic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+                font-weight: 600 !important;
+            }
+
+            /* تحسين وضوح الخطوط في الطباعة */
+            * {
+                text-rendering: optimizeLegibility !important;
+                -webkit-font-feature-settings: "liga" 1, "kern" 1 !important;
+                font-feature-settings: "liga" 1, "kern" 1 !important;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const printButton = document.querySelector('.print-button');
+            if (printButton) {
+                printButton.addEventListener('click', function () {
+                    window.print();
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const exportBtn = document.getElementById('exportPdfBtn');
+            const modal = new bootstrap.Modal(document.getElementById('pdfExportModal'));
+            const pdfLinkInput = document.getElementById('pdfLinkInput');
+            const copyBtn = document.getElementById('copyPdfLinkBtn');
+            const whatsappBtn = document.getElementById('whatsappShareBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', async function () {
+                    exportBtn.disabled = true;
+                    exportBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التصدير...';
+                    try {
+                        const res = await fetch(`/certificates/<%= certificate.id %>/pdf`);
+                        const data = await res.json();
+                        if (data.success && data.url) {
+                            pdfLinkInput.value = data.url;
+                            whatsappBtn.href = `https://wa.me/?text=${encodeURIComponent(data.url)}`;
+                            modal.show();
+                        } else {
+                            alert(data.message || 'حدث خطأ أثناء توليد ملف PDF');
+                        }
+                    } catch (e) {
+                        alert('حدث خطأ في الاتصال بالخادم');
+                    }
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = '<i class="fas fa-file-pdf me-1"></i> تصدير PDF';
+                });
+            }
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function () {
+                    pdfLinkInput.select();
+                    document.execCommand('copy');
+                });
+            }
+
+            // Add open link functionality
+            const openLinkBtn = document.getElementById('openPdfLinkBtn');
+            if (openLinkBtn) {
+                openLinkBtn.addEventListener('click', function() {
+                    const pdfUrl = pdfLinkInput.value;
+                    if (pdfUrl) {
+                        window.open(pdfUrl, '_blank');
+                    } else {
+                        alert('لا يوجد رابط متاح للفتح');
+                    }
+                });
+            }
+        });
+    </script>

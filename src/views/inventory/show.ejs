@@ -1,0 +1,797 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+
+// دالة لتنسيق التاريخ باللغة الإنجليزية
+function formatDateEnglish(dateString) {
+    if (!dateString) return '-';
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '-';
+    
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString();
+    
+    return `${day}/${month}/${year}`;
+}
+
+// دالة مساعدة لتحويل الأرقام الإنجليزية إلى عربية
+function convertToArabicNumbers(num) {
+    if (num === null || num === undefined || num === '') return '-';
+    
+    const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    return num.toString().split('').map(d => arabicNumbers[parseInt(d)] || d).join('');
+}
+%>
+
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">تفاصيل العينة: <%= item.sample_number %></h6>
+                    <div class="btn-group">
+                         <a href="/inventory" class="btn btn-sm btn-secondary" title="العودة للمخزون">
+                            <i class="fas fa-arrow-left"></i> العودة
+                        </a>
+                        <% if (user && user.role === 'editor' && !item.deleted_at) { %>
+                            <a href="/inventory/<%= item.id %>/edit" class="btn btn-sm btn-secondary" title="تعديل">
+                                <i class="fas fa-edit"></i> تعديل
+                            </a>
+                        <% } %>
+                        <button type="button" class="btn btn-sm btn-primary" id="printBtn" title="طباعة">
+                            <i class="fas fa-print"></i> طباعة
+                        </button>
+                        <% if (item.deleted_at && user && user.role === 'editor') { %>
+                            <button class="btn btn-sm btn-danger delete-btn" id="restoreBtn"><i class="fas fa-undo"></i> استعادة العينة</button>
+                        <% } %>
+                        <% if (user && user.role === 'editor') { %>
+                            <button type="button" class="btn btn-sm btn-warning delete-btn" 
+                                    data-id="<%= item.id %>" 
+                                    data-sample="<%= item.sample_number %>"
+                                    title="نقل إلى سلة المحذوفات">
+                                <i class="fas fa-archive"></i> نقل إلى سلة المحذوفات
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- معلومات أساسية -->
+                        <div class="col-md-4">
+                            <div class="card h-100 border-primary">
+                                <div class="card-header bg-primary text-black">
+                                    <h6 class="mb-0">معلومات أساسية</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="text-muted small">التاريخ</label>
+                                        <p class="mb-2 fw-bold"><%= formatDateEnglish(item.date) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">رقم العينة</label>
+                                        <p class="mb-2 fw-bold"><%= item.sample_number %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">المورد/العينة</label>
+                                        <p class="mb-2 fw-bold"><%= item.supplier_or_sample_name %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات الكمية -->
+                        <div class="col-md-4">
+                            <div class="card h-100 border-success">
+                                <div class="card-header bg-success text-black">
+                                    <h6 class="mb-0">معلومات الكمية</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="text-muted small">الكمية الأساسية (تنكة)</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.base_quantity) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">وزن العينة</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.sample_weight) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">الوزن الصافي الأساسي</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.net_weight_total) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">الكمية الحالية (تنكة)</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.current_quantity) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">الوزن الصافي الحالي</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.current_quantity)*16.0) %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- القياسات الأساسية -->
+                        <div class="col-md-4">
+                            <div class="card h-100 border-info">
+                                <div class="card-header bg-info text-black">
+                                    <h6 class="mb-0">القياسات الأساسية</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="text-muted small">درجة الحموضة</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.ph) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">رقم البيروكسيد</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.peroxide_value) %></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="text-muted small">ستيغما ستاديين</label>
+                                        <p class="mb-2 fw-bold"><%= formatNumberDisplay(item.sigma_absorbance) || '-' %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- قياسات الامتصاص -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">قياسات الامتصاص</h6>
+                                </div>
+                                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                                            <label class="text-muted small">امتصاص 232</label>
+                                            <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[0]) || '-' %></p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="text-muted small">امتصاص 266</label>
+                                            <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[1]) || '-' %></p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="text-muted small">امتصاص 270</label>
+                                            <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[2]) || '-' %></p>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="text-muted small">امتصاص 274</label>
+                                            <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[3]) || '-' %></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="text-muted small">Delta K</label>
+                                            <p class="mb-2 fw-bold"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[4]) || '-' %></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- معلومات إضافية -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-secondary">
+                                <div class="card-header bg-secondary text-black">
+                                    <h6 class="mb-0">معلومات إضافية</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="text-muted small">المحلل</label>
+                                        <p class="mb-2 fw-bold"><%= item.analyst || '-' %></p>
+                                    </div>
+                                    <div>
+                                        <label class="text-muted small">ملاحظات</label>
+                                        <p class="mb-0 fw-bold"><%= item.notes || 'لا توجد ملاحظات' %></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Movement Section -->
+    <div class="row d-print-none">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">حركة المبيعات</h6>
+                </div>
+                <div class="card-body">
+                    <% if (locals.sales && sales.length > 0) { %>
+                        <div class="table-responsive d-print-none">
+                            <table class="table table-bordered d-print-none">
+                                <thead>
+                                    <tr>
+                                        <th>رقم الفاتورة</th>
+                                        <th>التاريخ</th>
+                                        <th>اسم العميل</th>
+                                        <th>الكمية (تنكة)</th>
+                                        <th>الوزن الصافي</th>
+                                        <th>السائق</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% sales.forEach(sale => { %>
+                                        <tr>
+                                            <td><%= sale.invoice_number %></td>
+                                            <td><%= formatDateEnglish(sale.date) %></td>
+                                            <td><%= sale.customer_name %></td>
+                                            <td><%= formatNumberDisplay(sale.quantity) %></td>
+                                            <td><%= formatNumberDisplay(sale.net_weight) %></td>
+                                            <td><%= sale.driver_name || '-' %></td>
+                                            <td>
+                                                <a href="/invoices/<%= sale.invoice_id %>" 
+                                                   class="btn btn-sm btn-outline-primary rounded-pill d-inline-flex align-items-center gap-2" 
+                                                   title="عرض تفاصيل الفاتورة">
+                                                    <i class="fas fa-file-invoice"></i>
+                                                    <span>عرض الفاتورة</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-start"><strong>المجموع:</strong></td>
+                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat(sale.quantity), 0).toFixed(2) %></strong></td>
+                                        <td><strong><%= sales.reduce((sum, sale) => sum + parseFloat(sale.net_weight), 0).toFixed(2) %></strong></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-3x mb-3"></i>
+                            <p>لا توجد مبيعات لهذه العينة</p>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Section - Hidden by default -->
+<div class="print-section" style="display: none;">
+    <!-- Print Header -->
+    <div class="print-header d-none d-print-block">
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Tahoma, sans-serif; margin-bottom: 10px;">
+            <tr>
+                <!-- Right side: المؤسسة -->
+                <td style="text-align: right; direction: rtl; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4; width: 37%;">
+                    <div>مؤسسة عجاج أخوان التجارية</div>
+                    <div>لإنتاج وتعبئة المواد الغذائية</div>
+                    <div>وتجارة زيت الزيتون البكر</div>
+                    <div style="font-size: 12px;">س.ت 10369 – س.ص 10</div>
+                </td>
+
+                <!-- Center: الشعار -->
+                <td style="text-align: center; width: 26%;">
+                    <img src="/public/images/nexa.png" alt="شعار" style="width: 100px; height: 100px;">
+                </td>
+
+                <!-- Left side: Company Information -->
+                <td style="text-align: left; font-size: 10pt; font-weight: bold; color: #333; line-height: 1.4; width: 37%;">
+                    <div>Ajaj Brothers Commercial Foundation</div>
+                    <div>For Food Production and Packaging</div>
+                    <div>And Virgin Olive Oil Trade</div>
+                    <div style="font-size: 12px;">C.R. 10369 – I.R. 10</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Print Content -->
+    <div class="print-content">
+        <h2 style="text-align: center; color: #333; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            تقرير تفاصيل العينة - <%= item.sample_number %>
+        </h2>
+
+        <!-- Basic Information Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <tr style="background-color: #f8f9fa;">
+                <th colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: #007bff; color: #000;">
+                    المعلومات الأساسية
+                </th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">التاريخ</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatDateEnglish(item.date) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">رقم العينة</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= item.sample_number %></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">المورد/العينة</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= item.supplier_or_sample_name %></td>
+            </tr>
+        </table>
+
+        <!-- Quantity Information Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <tr style="background-color: #f8f9fa;">
+                <th colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: #28a745; color: #000;">
+                    معلومات الكمية
+                </th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">الكمية الأساسية (تنكة)</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatNumberDisplay(item.base_quantity) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">الكمية الحالية (تنكة)</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatNumberDisplay(item.current_quantity) %></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">وزن العينة</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.sample_weight) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الأساسي</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay(item.net_weight_total) %></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">الوزن الصافي الحالي</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= formatNumberDisplay((item.current_quantity)*16.0) %></td>
+            </tr>
+        </table>
+
+        <!-- Measurements Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <tr style="background-color: #f8f9fa;">
+                <th colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: #17a2b8; color: #000;">
+                    القياسات الأساسية
+                </th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">درجة الحموضة</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatNumberDisplay(item.ph) %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">رقم البيروكسيد</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatNumberDisplay(item.peroxide_value) %></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">ستيغما ستاديين</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= formatNumberDisplay(item.sigma_absorbance) || '-' %></td>
+            </tr>
+        </table>
+
+        <!-- Absorption Measurements Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <tr style="background-color: #f8f9fa;">
+                <th colspan="5" style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: #ffc107; color: #000;">
+                    قياسات الامتصاص
+                </th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 20%;">امتصاص 232</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 20%;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[0]) || '-' %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 20%;">امتصاص 266</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 20%;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[1]) || '-' %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 20%;">امتصاص 270</td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">امتصاص 274</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[3]) || '-' %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold;">Delta K</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="2"><%= formatNumberDisplay((item.absorption_readings || '').split(' ')[4]) || '-' %></td>
+            </tr>
+        </table>
+
+        <!-- Additional Information Table -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <tr style="background-color: #f8f9fa;">
+                <th colspan="4" style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: #6c757d; color: #000;">
+                    معلومات إضافية
+                </th>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">المحلل</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= item.analyst || '-' %></td>
+                <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 25%;">تاريخ التحليل</td>
+                <td style="padding: 8px; border: 1px solid #ddd; width: 25%;"><%= formatDateEnglish(item.date) %></td>
+            </tr>
+            <tr>
+                <td style="padding: 8px; border:
+ 1px solid #ddd; font-weight: bold;">ملاحظات</td>
+                <td style="padding: 8px; border: 1px solid #ddd;" colspan="3"><%= item.notes || 'لا توجد ملاحظات' %></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Print Footer -->
+    <div class="print-footer text-center" id="fixed-print-footer">
+        <hr style="border-color: #ccc; margin: 4px 0;">
+        سوريا، حماة، أوتستراد دمشق-حلب الدولي، س.ت 10369 – س.ص 10<br>
+        0940500511 – 0988111127 | ajajbrothers@gmail.com<br>
+        جميع الحقوق محفوظة © 2025 نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA للبرمجيات
+    </div>
+</div>
+
+<style>
+    .rejected-row {
+        background-color: #ffebee !important;
+    }
+    .reject-btn {
+        color: #dc3545;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .reject-btn:hover {
+        color: #c82333;
+    }
+    .reject-btn.rejected {
+        color: #28a745;
+    }
+    
+    /* Print Styles */
+    @media print {
+        .d-print-none {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        * {
+            background-color: #fff !important; 
+        }
+
+        .card-header {
+            display: block !important;
+        }
+
+        /* Hide non-print elements */
+        .container, .card, .btn, .btn-group, .modal, .no-print {
+            display: none !important;
+        }
+        
+        /* Show print section */
+        .print-section {
+            display: block !important;
+        }
+        
+        /* Page setup for A4 portrait */
+        @page {
+            size: A4 portrait;
+            margin: 1cm;
+        }
+        
+        /* Print header styles */
+        .print-header {
+            margin-bottom: 20px;
+        }
+        
+        .print-header table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .print-header img {
+            width: 100px !important;
+            height: 100px !important;
+        }
+        
+        /* Print content styles */
+        .print-content {
+            margin-bottom: 20px;
+        }
+        
+        .print-content h2 {
+            font-size: 18pt;
+            margin-bottom: 20px;
+        }
+        
+        .print-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 10pt;
+        }
+        
+        .print-content th,
+        .print-content td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+        }
+        
+        .print-content th {
+            background-color: #f0f0f0 !important;
+            font-weight: bold;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .print-footer {
+          position: fixed;
+          bottom: 1cm;
+          left: 0;
+          right: 0;                  
+          text-align: center;        
+          font-size: 8pt;
+          color: #666;
+          border-top: 1px solid #ccc;
+          padding-top: 10px;
+        }
+
+
+        
+        /* Ensure colors print */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+    
+    @media screen {
+        .print-section {
+            display: none;
+        }
+        
+        /* Test print section visibility - remove this after testing */
+        .print-section.test-visible {
+            display: block !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            z-index: 9999;
+            overflow-y: auto;
+        }
+    }
+</style>
+
+<script>
+// Print function
+function doPrint() {
+    // Hide the main content
+    document.querySelector('.container').style.display = 'none';
+    
+    // Show the print section
+    document.querySelector('.print-section').style.display = 'block';
+    
+    // Print the page
+    window.print();
+    
+    // After printing, restore the original display
+    setTimeout(() => {
+        document.querySelector('.container').style.display = 'block';
+        document.querySelector('.print-section').style.display = 'none';
+    }, 500);
+}
+
+// Add event listeners when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize delete button (now moves to trash)
+    const deleteBtn = document.querySelector('.delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const sampleNumber = this.getAttribute('data-sample');
+            
+            if (confirm(`هل أنت متأكد من نقل العينة ${sampleNumber} إلى سلة المحذوفات؟`)) {
+                // Disable button and show loading
+                this.disabled = true;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري النقل...';
+                
+                fetch(`/inventory/trash/${id}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = '/inventory';
+                    } else {
+                        throw new Error(data.message || 'حدث خطأ أثناء نقل العينة');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(error.message || 'حدث خطأ أثناء نقل العينة');
+                    
+                    // Re-enable button
+                    this.disabled = false;
+                    this.innerHTML = '<i class="fas fa-archive"></i> نقل إلى سلة المحذوفات';
+                });
+            }
+        });
+    }
+    
+    // Initialize print button
+    const printBtn = document.getElementById('printBtn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            doPrint();
+        });
+    }
+    
+    // Initialize test print button
+    const testPrintBtn = document.getElementById('testPrintBtn');
+    if (testPrintBtn) {
+        testPrintBtn.addEventListener('click', function() {            
+            // Hide the main content
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'none';
+            }
+            
+            // Show the print section
+            const printSection = document.querySelector('.print-section');
+            if (printSection) {
+                printSection.style.display = 'block';
+                printSection.style.position = 'fixed';
+                printSection.style.top = '0';
+                printSection.style.left = '0';
+                printSection.style.width = '100%';
+                printSection.style.height = '100%';
+                printSection.style.background = 'white';
+                printSection.style.zIndex = '9999';
+                printSection.style.overflowY = 'auto';
+                printSection.style.padding = '20px';
+            } else {
+                console.error('Print section not found');
+            }
+            
+            // Add a close button
+            const closeBtn = document.createElement('button');
+            closeBtn.innerHTML = 'إغلاق المعاينة';
+            closeBtn.className = 'btn btn-danger';
+            closeBtn.style.position = 'fixed';
+            closeBtn.style.top = '10px';
+            closeBtn.style.right = '10px';
+            closeBtn.style.zIndex = '10000';
+            closeBtn.onclick = function() {
+                if (container) {
+                    container.style.display = 'block';
+                }
+                if (printSection) {
+                    printSection.style.display = 'none';
+                    printSection.style.position = '';
+                    printSection.style.top = '';
+                    printSection.style.left = '';
+                    printSection.style.width = '';
+                    printSection.style.height = '';
+                    printSection.style.background = '';
+                    printSection.style.zIndex = '';
+                    printSection.style.overflowY = '';
+                    printSection.style.padding = '';
+                }
+                this.remove();
+            };
+            document.body.appendChild(closeBtn);
+        });
+    }
+});
+
+function toggleReject(id, currentStatus) {
+    if (confirm('هل أنت متأكد من ' + (currentStatus ? 'إلغاء رفض' : 'رفض') + ' هذه العينة؟')) {
+        fetch(`/inventory/${id}/toggle-reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء تحديث حالة العينة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء تحديث حالة العينة');
+        });
+    }
+}
+
+// Test function for print section
+function testPrintSection() {
+    
+    // Hide the main content
+    const container = document.querySelector('.container');
+    if (container) {
+        container.style.display = 'none';
+    }
+    
+    // Show the print section
+    const printSection = document.querySelector('.print-section');
+    if (printSection) {
+        printSection.style.display = 'block';
+        printSection.style.position = 'fixed';
+        printSection.style.top = '0';
+        printSection.style.left = '0';
+        printSection.style.width = '100%';
+        printSection.style.height = '100%';
+        printSection.style.background = 'white';
+        printSection.style.zIndex = '9999';
+        printSection.style.overflowY = 'auto';
+        printSection.style.padding = '20px';
+    } else {
+        console.error('Print section not found');
+        alert('قسم الطباعة غير موجود!');
+    }
+    
+    // Add a close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = 'إغلاق المعاينة';
+    closeBtn.className = 'btn btn-danger';
+    closeBtn.style.position = 'fixed';
+    closeBtn.style.top = '10px';
+    closeBtn.style.right = '10px';
+    closeBtn.style.zIndex = '10000';
+    closeBtn.onclick = function() {
+        if (container) {
+            container.style.display = 'block';
+        }
+        if (printSection) {
+            printSection.style.display = 'none';
+            printSection.style.position = '';
+            printSection.style.top = '';
+            printSection.style.left = '';
+            printSection.style.width = '';
+            printSection.style.height = '';
+            printSection.style.background = '';
+            printSection.style.zIndex = '';
+            printSection.style.overflowY = '';
+            printSection.style.padding = '';
+        }
+        this.remove();
+    };
+    document.body.appendChild(closeBtn);
+}
+
+// Restore function
+document.getElementById('restoreBtn').addEventListener('click', function() {
+    if (confirm('هل أنت متأكد من استعادة هذه العينة؟')) {
+        fetch(`/inventory/<%= item.id %>/restore`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '/inventory';
+            } else {
+                alert(data.message || 'حدث خطأ أثناء الاستعادة');
+            }
+        })
+        .catch(() => alert('حدث خطأ أثناء الاستعادة'));
+    }
+});
+</script> 

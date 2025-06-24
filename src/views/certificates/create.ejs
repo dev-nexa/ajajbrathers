@@ -1,0 +1,368 @@
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i> <%= type === 'internal' ? 'إنشاء شهادة تحليل داخلية' : 'إنشاء شهادة تحليل خارجية' %></h5>
+    </div>
+    <div class="card-body">
+      <form action="/certificates" method="POST" id="certificateForm">
+        <input type="hidden" name="type" value="<%= type %>">
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label">رقم الشهادة</label>
+            <input type="text" class="form-control" value="<%= nextNumber %>" readonly>
+            <input type="hidden" name="certificate_number" value="<%= nextNumber %>">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">التاريخ</label>
+            <input type="text" class="form-control" value="<%= new Date().toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %>" readonly>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">اسم العميل</label>
+            <input type="text" class="form-control" name="customer_name" required>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="text" class="form-control" name="customer_phone">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">العنوان</label>
+            <input type="text" class="form-control" name="customer_address">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label required">المحلل</label>
+            <input type="text" class="form-control" name="analyst" required>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <textarea class="form-control" name="notes" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="table-responsive mb-3">
+          <table class="table table-bordered" id="samplesTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>رقم العينة</th>
+                <th>الكمية</th>
+                <th>وحدة تعبئة</th>
+                <th>وزن تعبئة</th>
+                <th>وزن إجمالي</th>
+                <th>درجة الحموضة</th>
+                <th>رقم البيروكسيد</th>
+                <th>232</th>
+                <th>266</th>
+                <th>270</th>
+                <th>277</th>
+                <th>دلتا k</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="samplesTableBody">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mb-3">
+          <button type="button" class="btn btn-outline-success" id="addSampleBtn">
+            <i class="fas fa-plus me-1"></i> إضافة عينة
+          </button>
+        </div>
+
+        <div class="text-end">
+          <a href="/certificates" class="btn btn-secondary">
+            <i class="fas fa-times me-1"></i> إلغاء
+          </a>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-save me-1"></i> حفظ الشهادة
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Add Sample Modal -->
+<div class="modal fade" id="addSampleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">إضافة عينة جديدة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="sampleForm">
+          <% if (type === 'internal') { %>
+          <div class="form-group mb-3">
+            <label for="sample_number">رقم العينة</label>
+            <input type="text" class="form-control" id="sample_number" name="sample_number" 
+                   <%= type === 'external' ? 'style="display: none;"' : '' %>>
+          </div>
+          <% } %>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">الكمية</label>
+              <input type="number" class="form-control" name="quantity" step="0.001">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">وحدة تعبئة</label>
+              <input type="text" class="form-control" name="packaging_unit">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">وزن تعبئة</label>
+              <input type="number" class="form-control" name="packaging_weight" step="0.001">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">وزن إجمالي</label>
+              <input type="number" class="form-control" name="total_weight" step="0.001">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">درجة الحموضة</label>
+              <input type="number" class="form-control" name="ph" step="0.001">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">رقم البيروكسيد</label>
+              <input type="number" class="form-control" name="peroxide" step="0.001">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">232</label>
+              <input type="number" class="form-control" name="abs_232" step="0.001">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label class="form-label">266</label>
+              <input type="number" class="form-control" name="abs_266" step="0.001">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">270</label>
+              <input type="number" class="form-control" name="abs_270" step="0.001">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">274</label>
+              <input type="number" class="form-control" name="abs_274" step="0.001">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">ستيغما ستاديين</label>
+              <input type="number" class="form-control" name="sigma_stadiene" step="0.001">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">دلتا k</label>
+              <input type="number" class="form-control" name="delta_k" step="0.001">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="saveSampleBtn">حفظ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let items = [];
+let editingIndex = -1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const addSampleModal = new bootstrap.Modal(document.getElementById('addSampleModal'));
+    const sampleForm = document.getElementById('sampleForm');
+    const saveSampleBtn = document.getElementById('saveSampleBtn');
+    const form = document.getElementById('certificateForm');
+
+    // Add new sample
+    document.getElementById('addSampleBtn').addEventListener('click', function() {
+        editingIndex = -1;
+        sampleForm.reset();
+        addSampleModal.show();
+    });
+
+    // Save sample
+    saveSampleBtn.addEventListener('click', function() {
+        const formData = new FormData(sampleForm);
+        
+        // تقسيم قراءات الامتصاص إلى مصفوفة
+        const absorptionReadings = formData.get('absorption_readings').trim().split(/\s+/);
+        if (absorptionReadings.length !== 5) {
+            alert('الرجاء إدخال 5 قراءات للامتصاص مفصولة بمسافات');
+            return;
+        }
+
+        const sampleData = {
+            sample_number: formData.get('sample_number'),
+            quantity: parseFloat(formData.get('quantity')),
+            packaging_unit: formData.get('packaging_unit'),
+            packaging_weight: parseFloat(formData.get('packaging_weight')),
+            total_weight: parseFloat(formData.get('total_weight')),
+            ph: parseFloat(formData.get('ph')),
+            peroxide: parseFloat(formData.get('peroxide')),
+            abs_232: parseFloat(absorptionReadings[0]),
+            abs_266: parseFloat(absorptionReadings[1]),
+            abs_270: parseFloat(absorptionReadings[2]),
+            abs_277: parseFloat(absorptionReadings[3]),
+            delta_k: parseFloat(absorptionReadings[4])
+        };
+
+        if (editingIndex === -1) {
+            items.push(sampleData);
+        } else {
+            items[editingIndex] = sampleData;
+        }
+
+        updateTable();
+        addSampleModal.hide();
+    });
+
+    // Update table
+    function updateTable() {
+        const tbody = document.getElementById('samplesTableBody');
+        tbody.innerHTML = '';
+        
+        items.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.sample_number}</td>
+                <td>${item.quantity}</td>
+                <td>${item.packaging_unit}</td>
+                <td>${item.packaging_weight}</td>
+                <td>${item.total_weight}</td>
+                <td>${item.ph}</td>
+                <td>${item.peroxide}</td>
+                <td>${item.abs_232}</td>
+                <td>${item.abs_266}</td>
+                <td>${item.abs_270}</td>
+                <td>${item.abs_277}</td>
+                <td>${item.delta_k}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-primary edit-btn" data-index="${index}">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger delete-btn" data-index="${index}">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        // Add event listeners for edit and delete buttons
+        document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const index = parseInt(this.dataset.index);
+                editingIndex = index;
+                const item = items[index];
+                
+                // تجميع قراءات الامتصاص في سلسلة نصية واحدة
+                const absorptionReadings = `${item.abs_232} ${item.abs_266} ${item.abs_270} ${item.abs_277} ${item.delta_k}`;
+                
+                // تعبئة النموذج بالبيانات
+                sampleForm.querySelector('[name="sample_number"]').value = item.sample_number;
+                sampleForm.querySelector('[name="quantity"]').value = item.quantity;
+                sampleForm.querySelector('[name="packaging_unit"]').value = item.packaging_unit;
+                sampleForm.querySelector('[name="packaging_weight"]').value = item.packaging_weight;
+                sampleForm.querySelector('[name="total_weight"]').value = item.total_weight;
+                sampleForm.querySelector('[name="ph"]').value = item.ph;
+                sampleForm.querySelector('[name="peroxide"]').value = item.peroxide;
+                sampleForm.querySelector('[name="absorption_readings"]').value = absorptionReadings;
+                
+                addSampleModal.show();
+            });
+        });
+
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('هل أنت متأكد من حذف هذه العينة؟')) {
+                    const index = parseInt(this.dataset.index);
+                    items.splice(index, 1);
+                    updateTable();
+                }
+            });
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            try {
+                if (items.length === 0) {
+                    alert('يجب إضافة عينة واحدة على الأقل');
+                    return;
+                }
+                
+                const formData = {
+                    type: form.querySelector('input[name="type"]').value,
+                    certificate_number: form.querySelector('input[name="certificate_number"]').value,
+                    customer_name: form.querySelector('input[name="customer_name"]').value,
+                    customer_phone: form.querySelector('input[name="customer_phone"]')?.value || '',
+                    customer_address: form.querySelector('input[name="customer_address"]')?.value || '',
+                    analyst: form.querySelector('input[name="analyst"]').value,
+                    notes: form.querySelector('textarea[name="notes"]')?.value || '',
+                    items: items
+                };
+
+                
+                fetch('/certificates', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/certificates/${data.certificateId}`;
+                    } else {
+                        alert(data.message || 'حدث خطأ أثناء حفظ الشهادة');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('حدث خطأ أثناء حفظ الشهادة');
+                });
+            } catch (error) {
+                console.error('حدث خطأ أثناء إرسال النموذج:', error);
+                alert('حدث خطأ أثناء معالجة النموذج. يرجى المحاولة مرة أخرى.');
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.required:after {
+    content: " *";
+    color: red;
+}
+
+.form-control-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.table td {
+  padding: 0.5rem;
+}
+
+.table input {
+  min-width: 80px;
+}
+</style> 

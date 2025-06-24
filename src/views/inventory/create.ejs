@@ -1,0 +1,602 @@
+<%- include('../layouts/header') %>
+
+<style>
+/* تحسين مظهر حقل التاريخ للغة العربية */
+.datepicker {
+    direction: ltr;
+    text-align: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+}
+
+.datepicker:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.datepicker::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* تحسين مظهر الفورم للغة العربية */
+.form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* تحسين مظهر الأزرار */
+.btn {
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+/* CSS للتقويم */
+.calendar-container {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.calendar-header {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #e9ecef;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.calendar-weekdays > div {
+    padding: 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #495057;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: white;
+}
+
+.calendar-day {
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.calendar-day:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.calendar-day.selected {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.calendar-day.today {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.calendar-day.other-month {
+    color: #6c757d;
+    background-color: #f8f9fa;
+}
+
+.calendar-day.disabled {
+    color: #adb5bd;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+}
+
+.calendar-day.disabled:hover {
+    background-color: #f8f9fa;
+    border-color: transparent;
+}
+
+/* تحسين مظهر المودال */
+.modal-sm {
+    max-width: 400px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+#currentMonthYear {
+    font-size: 16px;
+    color: #495057;
+}
+</style>
+
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-plus-circle me-2"></i>
+            إضافة عينة جديدة
+          </h5>
+          <a href="/inventory" class="btn btn-light btn-sm">
+            <i class="fas fa-arrow-right me-1"></i>
+            العودة للمخزون
+          </a>
+        </div>
+        <div class="card-body">
+
+          <form action="/inventory/create" method="POST" class="needs-validation" novalidate>
+            <div class="row">
+              <!-- Basic Information -->
+              <div class="col-md-6 mb-3">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-info-circle me-2"></i>
+                  المعلومات الأساسية
+                </h6>
+                
+                <div class="mb-3">
+                  <label class="form-label">التاريخ <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <input type="text" class="form-control datepicker" id="date" name="date" placeholder="يوم/شهر/سنة" required readonly>
+                    <button type="button" class="btn btn-outline-secondary" id="datePickerBtn">
+                      <i class="fas fa-calendar-alt"></i>
+                    </button>
+                  </div>
+                  <small class="text-muted">تاريخ اليوم هو القيمة الافتراضية</small>
+                  <div class="invalid-feedback">يرجى إدخال التاريخ</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">رقم العينة <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" name="sample_number" required>
+                  <div class="invalid-feedback">يرجى إدخال رقم العينة</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="supplier_or_sample_name" class="form-label">اسم المورد أو العينة <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="supplier_or_sample_name" name="supplier_or_sample_name" required>
+                  <div class="invalid-feedback">يرجى إدخال اسم المورد أو العينة</div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="analyst" class="form-label">المحلل <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="analyst" name="analyst" required>
+                  <div class="invalid-feedback">يرجى إدخال اسم المحلل</div>
+                </div>
+              </div>
+
+              <!-- Quantity Information -->
+              <div class="col-md-6 mb-3">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-balance-scale me-2"></i>
+                  معلومات الكمية
+                </h6>
+
+                <div class="mb-3">
+                  <label for="base_quantity" class="form-label">الكمية الأساسية <span class="text-danger">*</span></label>
+                  <input type="number" step="0.001" class="form-control" id="base_quantity" name="base_quantity" required>
+                  <div class="invalid-feedback">يرجى إدخال الكمية الأساسية</div>
+                  <small class="text-muted">الكمية الأساسية بواحدة التنكة</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="current_quantity" class="form-label">الكمية الحالية</label>
+                  <input type="number" step="0.001" class="form-control" id="current_quantity" name="current_quantity" min="0">
+                  <div class="invalid-feedback">يرجى إدخال الكمية الحالية</div>
+                  <small class="text-muted">اتركه فارغاً ليتم تعيينه تلقائياً كالكمية الأساسية</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="net_weight_total" class="form-label">الوزن الصافي <span class="text-danger">*</span></label>
+                  <input type="number" step="0.001" class="form-control" id="net_weight_total" name="net_weight_total" required>
+                  <div class="invalid-feedback">يرجى إدخال الوزن الصافي</div>
+                  <small class="text-muted">يرجى إدخال الوزن الصافي يدوياً</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="sample_weight" class="form-label">وزن العينة (اختياري)</label>
+                  <input type="number" step="0.001" class="form-control" id="sample_weight" name="sample_weight">
+                  <small class="text-muted">يمكن تركه فارغاً</small>
+                </div>
+              </div>
+
+              <!-- Analysis Results -->
+              <div class="col-12 mb-3">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-flask me-2"></i>
+                  نتائج التحليل
+                </h6>
+
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label for="ph" class="form-label">درجة الحموضة<span class="text-danger">*</span></label>
+                    <input type="number" step="0.001" class="form-control" id="ph" name="ph" required>
+                    <div class="invalid-feedback">يرجى إدخال درجة الحموضة</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="peroxide_value" class="form-label">رقم البيروكسيد</label>
+                    <input type="number" step="0.001" class="form-control" id="peroxide_value" name="peroxide_value">
+                    <div class="invalid-feedback">يرجى إدخال قيمة البيروكسيد</div>
+                  </div>
+
+                  <div class="col-md-4 mb-3">
+                    <label for="sigma_absorbance" class="form-label">ستيغما ستاديين</label>
+                    <input type="number" step="0.001" class="form-control" id="sigma_absorbance" name="sigma_absorbance">
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="absorption_readings" class="form-label">قراءات الامتصاص <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="absorption_readings" name="absorption_readings" 
+                         placeholder="مثال: 1.234\t2.345\t3.456\t4.567\t5.678" required>
+                  <div class="form-text">قراءات الإمتصاص 232nm 266nm 270nm 274nm دلتا k</div>
+                  <div class="invalid-feedback">يرجى إدخال قراءات الامتصاص بشكل صحيح</div>
+                </div>
+              </div>
+
+              <!-- Notes -->
+              <div class="col-12 mb-3">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-sticky-note me-2"></i>
+                  ملاحظات
+                </h6>
+
+                <div class="mb-3">
+                  <label for="notes" class="form-label">ملاحظات إضافية</label>
+                  <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <a href="/inventory" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i>
+                إلغاء
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i>
+                حفظ العينة
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Date Picker Modal -->
+<div class="modal fade" id="datePickerModal" tabindex="-1" aria-labelledby="datePickerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="datePickerModalLabel">
+          <i class="fas fa-calendar-alt me-2"></i>
+          اختيار التاريخ
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-12 mb-3">
+            <label class="form-label">الشهر</label>
+            <select class="form-select" id="monthSelect">
+              <option value="1">يناير</option>
+              <option value="2">فبراير</option>
+              <option value="3">مارس</option>
+              <option value="4">أبريل</option>
+              <option value="5">مايو</option>
+              <option value="6">يونيو</option>
+              <option value="7">يوليو</option>
+              <option value="8">أغسطس</option>
+              <option value="9">سبتمبر</option>
+              <option value="10">أكتوبر</option>
+              <option value="11">نوفمبر</option>
+              <option value="12">ديسمبر</option>
+            </select>
+          </div>
+          <div class="col-12 mb-3">
+            <label class="form-label">السنة</label>
+            <select class="form-select" id="yearSelect">
+              <!-- سيتم ملؤها بالجافاسكريبت -->
+            </select>
+          </div>
+        </div>
+        <div class="calendar-container">
+          <div class="calendar-header">
+            <div class="calendar-nav">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonth">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span id="currentMonthYear" class="fw-bold"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonth">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-weekdays">
+            <div>الأحد</div>
+            <div>الإثنين</div>
+            <div>الثلاثاء</div>
+            <div>الأربعاء</div>
+            <div>الخميس</div>
+            <div>الجمعة</div>
+            <div>السبت</div>
+          </div>
+          <div class="calendar-days" id="calendarDays">
+            <!-- سيتم ملؤها بالجافاسكريبت -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmDate">تأكيد</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// متغيرات عامة للتقويم
+let currentDate = new Date();
+let selectedDate = new Date();
+let currentMonth = currentDate.getMonth();
+let currentYear = currentDate.getFullYear();
+
+// أسماء الأشهر بالعربية
+const monthNames = [
+    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+];
+
+// أسماء أيام الأسبوع بالعربية
+const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+        const today = new Date();
+        const day = today.getDate().toString().padStart(2, '0');
+        const month = (today.getMonth() + 1).toString().padStart(2, '0');
+        const year = today.getFullYear();
+        const formattedDate = `${day}/${month}/${year}`;
+        dateInput.value = formattedDate;
+        selectedDate = new Date(today);
+    }
+    
+    // تهيئة التقويم
+    initializeCalendar();
+    
+    // إضافة مستمعي الأحداث
+    document.getElementById('datePickerBtn').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('datePickerModal'));
+        modal.show();
+    });
+    
+    document.getElementById('prevMonth').addEventListener('click', function() {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendar();
+    });
+    
+    document.getElementById('nextMonth').addEventListener('click', function() {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    });
+    
+    document.getElementById('monthSelect').addEventListener('change', function() {
+        currentMonth = parseInt(this.value) - 1;
+        renderCalendar();
+    });
+    
+    document.getElementById('yearSelect').addEventListener('change', function() {
+        currentYear = parseInt(this.value);
+        renderCalendar();
+    });
+    
+    document.getElementById('confirmDate').addEventListener('click', function() {
+        const day = selectedDate.getDate().toString().padStart(2, '0');
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+        const year = selectedDate.getFullYear();
+        const formattedDate = `${day}/${month}/${year}`;
+        
+        document.getElementById('date').value = formattedDate;
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('datePickerModal'));
+        modal.hide();
+    });
+    
+    // تحسين تجربة المستخدم مع حقل التاريخ
+    const dateInputs = document.querySelectorAll('input.datepicker');
+    dateInputs.forEach(input => {
+        // إضافة placeholder
+        if (!input.value) {
+            input.placeholder = 'يوم/شهر/سنة';
+        }
+        
+        // تحسين المظهر عند التركيز
+        input.addEventListener('focus', function() {
+            this.style.borderColor = '#007bff';
+            this.style.boxShadow = '0 0 0 0.2rem rgba(0, 123, 255, 0.25)';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.style.borderColor = '';
+            this.style.boxShadow = '';
+        });
+    });
+});
+
+// دالة تهيئة التقويم
+function initializeCalendar() {
+    // ملء قائمة السنوات
+    const yearSelect = document.getElementById('yearSelect');
+    const currentYear = new Date().getFullYear();
+    
+    for (let year = currentYear - 10; year <= currentYear + 5; year++) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    // تعيين الشهر الحالي
+    document.getElementById('monthSelect').value = currentMonth + 1;
+    
+    // عرض التقويم
+    renderCalendar();
+}
+
+// دالة عرض التقويم
+function renderCalendar() {
+    const calendarDays = document.getElementById('calendarDays');
+    const currentMonthYear = document.getElementById('currentMonthYear');
+    
+    // تحديث عنوان الشهر والسنة
+    currentMonthYear.textContent = `${monthNames[currentMonth]} ${currentYear}`;
+    
+    // تحديث قوائم الشهر والسنة
+    document.getElementById('monthSelect').value = currentMonth + 1;
+    document.getElementById('yearSelect').value = currentYear;
+    
+    // مسح التقويم
+    calendarDays.innerHTML = '';
+    
+    // الحصول على أول يوم من الشهر
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    
+    // الحصول على عدد أيام الشهر
+    const daysInMonth = lastDay.getDate();
+    
+    // الحصول على يوم الأسبوع لأول يوم (0 = الأحد، 6 = السبت)
+    const firstDayOfWeek = firstDay.getDay();
+    
+    // إضافة أيام الشهر السابق
+    const prevMonth = new Date(currentYear, currentMonth, 0);
+    const daysInPrevMonth = prevMonth.getDate();
+    
+    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day other-month';
+        dayElement.textContent = daysInPrevMonth - i;
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // إضافة أيام الشهر الحالي
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.textContent = day;
+        
+        const currentDateObj = new Date(currentYear, currentMonth, day);
+        const today = new Date();
+        
+        // التحقق من أن التاريخ هو اليوم
+        if (day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear()) {
+            dayElement.classList.add('today');
+        }
+        
+        // التحقق من أن التاريخ هو المحدد
+        if (day === selectedDate.getDate() && currentMonth === selectedDate.getMonth() && currentYear === selectedDate.getFullYear()) {
+            dayElement.classList.add('selected');
+        }
+        
+        // التحقق من أن التاريخ في المستقبل
+        if (currentDateObj > today) {
+            dayElement.classList.add('disabled');
+        } else {
+            dayElement.addEventListener('click', function() {
+                // إزالة التحديد من جميع الأيام
+                document.querySelectorAll('.calendar-day.selected').forEach(el => {
+                    el.classList.remove('selected');
+                });
+                
+                // تحديد اليوم المختار
+                this.classList.add('selected');
+                selectedDate = new Date(currentYear, currentMonth, day);
+            });
+        }
+        
+        calendarDays.appendChild(dayElement);
+    }
+    
+    // إضافة أيام الشهر التالي لملء الصف الأخير
+    const remainingDays = 42 - (firstDayOfWeek + daysInMonth); // 6 صفوف × 7 أيام = 42
+    for (let day = 1; day <= remainingDays; day++) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day other-month';
+        dayElement.textContent = day;
+        calendarDays.appendChild(dayElement);
+    }
+}
+
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            // التحقق من التاريخ
+            const dateInput = form.querySelector('input[name="date"]');
+            if (dateInput && !dateInput.value) {
+                event.preventDefault();
+                event.stopPropagation();
+                dateInput.classList.add('is-invalid');
+                return;
+            }
+            
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>

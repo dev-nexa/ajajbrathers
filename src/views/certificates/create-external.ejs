@@ -1,0 +1,342 @@
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0"><i class="bi bi-award me-2"></i> إصدار شهادة تحليل خارجية</h5>
+    </div>
+    <div class="card-body">
+      <form action="/certificates" method="POST" class="needs-validation" novalidate>
+        <input type="hidden" name="type" value="external">
+        
+        <div class="row mb-3">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">رقم الشهادة</label>
+            <input type="text" class="form-control" name="certificate_number" value="<%= nextNumber %>" readonly>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">التاريخ</label>
+            <input type="text" class="form-control" value="<%= new Date().toLocaleDateString('en-GB') %>" readonly>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">اسم العميل/المورد</label>
+            <input type="text" class="form-control" name="customer_name">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="text" class="form-control" name="customer_phone">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">العنوان</label>
+            <input type="text" class="form-control" name="customer_address">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">المحلل</label>
+            <input type="text" class="form-control" name="analyst">
+          </div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <textarea class="form-control" name="notes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">العينات</label>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>الكمية</th>
+                  <th>وحدة التعبئة</th>
+                  <th>وزن التعبئة</th>
+                  <th>الوزن الصافي</th>
+                  <th>درجة الحموضة</th>
+                  <th>رقم البيروكسيد</th>
+                  <th>قراءات الامتصاص (232 266 270 274 دلتا k)</th>
+                  <th>ستيغما ستاديين</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="externalSamplesBody">
+                <tr>
+                  <td><input type="number" class="form-control form-control-sm" name="quantity"></td>
+                  <td><input type="text" class="form-control form-control-sm" name="packaging_unit"></td>
+                  <td><input type="number" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
+                  <td><input type="number" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
+                  <td><input type="number" class="form-control form-control-sm" name="ph" step="0.001"></td>
+                  <td><input type="number" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
+                  <td><input type="text" class="form-control form-control-sm absorption-readings-input" name="absorption_readings" placeholder="أدخل 5 قيم مفصولة بـ Tab"></td>
+                  <td><input type="number" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
+                  <td><button type="button" class="btn btn-sm btn-danger remove-sample-btn"><i class="bi bi-trash"></i></button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-outline-success btn-sm add-sample-btn">
+              <i class="bi bi-plus"></i> إضافة صف
+            </button>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end gap-2">
+          <a href="/certificates" class="btn btn-secondary">إلغاء</a>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-save me-1"></i> إصدار الشهادة
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const samplesTable = document.getElementById('externalSamplesBody');
+  const form = document.querySelector('form');
+  
+  // Function to parse absorption readings
+  function parseAbsorptionReadings(readingsStr) {
+    if (!readingsStr || !readingsStr.trim()) {
+      return [null, null, null, null, null];
+    }
+    
+    try {
+      // Split by tab, space, or comma and filter out empty strings
+      const readings = readingsStr.trim().split(/[\t\s,]+/).filter(Boolean);
+      
+      // Parse each reading as float, allowing negative numbers and decimals
+      const parsedReadings = readings.map(r => {
+        const parsed = parseFloat(r);
+        return isNaN(parsed) ? null : parsed;
+      });
+      
+      // Ensure we have exactly 5 values
+      const result = parsedReadings.length >= 5 ? parsedReadings.slice(0, 5) : [...parsedReadings, ...Array(5 - parsedReadings.length).fill(null)];
+      
+      return result;
+    } catch (error) {
+      console.error('Error parsing absorption readings:', error);
+      return [null, null, null, null, null];
+    }
+  }
+
+  // Function to format absorption readings for display
+  function formatAbsorptionReadings(readings) {
+    if (!readings || !Array.isArray(readings)) return '';
+    return readings.map(r => r !== null ? r.toString() : '').join('\t');
+  }
+
+  // Add event listeners for absorption readings inputs
+  function addAbsorptionReadingsListeners() {
+    document.querySelectorAll('.absorption-readings-input').forEach(input => {
+      // Remove existing listeners to avoid duplicates
+      input.removeEventListener('keydown', handleTabKey);
+      input.removeEventListener('input', handleAbsorptionInput);
+      
+      // Add new listeners
+      input.addEventListener('keydown', handleTabKey);
+      input.addEventListener('input', handleAbsorptionInput);
+    });
+  }
+
+  // Handle Tab key to move to next field
+  function handleTabKey(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const currentInput = e.target;
+      const currentRow = currentInput.closest('tr');
+      const inputs = currentRow.querySelectorAll('input');
+      const currentIndex = Array.from(inputs).indexOf(currentInput);
+      
+      if (currentIndex < inputs.length - 1) {
+        inputs[currentIndex + 1].focus();
+      }
+    }
+  }
+
+  // Handle absorption readings input
+  function handleAbsorptionInput(e) {
+    const input = e.target;
+    const value = input.value;
+    
+    // Auto-format the input to show tab-separated values
+    if (value.includes(',')) {
+      input.value = value.replace(/,/g, '\t');
+    }
+  }
+
+  // Add sample button event listener
+  const addSampleBtn = document.querySelector('.add-sample-btn');
+  if (addSampleBtn) {
+    addSampleBtn.addEventListener('click', addExternalSample);
+  }
+
+  // Remove sample button event listener
+  if (samplesTable) {
+    samplesTable.addEventListener('click', function(e) {
+      const removeBtn = e.target.closest('.remove-sample-btn');
+      if (removeBtn) {
+        const row = removeBtn.closest('tr');
+        if (samplesTable.querySelectorAll('tr').length > 1) {
+          row.remove();
+        } else {
+          alert('يجب أن تحتوي الشهادة على عينة واحدة على الأقل');
+        }
+      }
+    });
+  }
+
+  // Handle form submission
+  if (form) {
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        // Get all items data
+        const items = [];
+        const itemRows = document.querySelectorAll('#externalSamplesBody tr');
+        
+        itemRows.forEach(row => {
+          const absorptionReadingsStr = row.querySelector('input[name="absorption_readings"]')?.value || '';
+          const absorptionReadings = parseAbsorptionReadings(absorptionReadingsStr);
+          
+          const item = {
+            quantity: row.querySelector('input[name="quantity"]')?.value || null,
+            packaging_unit: row.querySelector('input[name="packaging_unit"]')?.value || null,
+            packaging_weight: row.querySelector('input[name="packaging_weight"]')?.value || null,
+            total_weight: row.querySelector('input[name="total_weight"]')?.value || null,
+            ph: row.querySelector('input[name="ph"]')?.value || null,
+            peroxide: row.querySelector('input[name="peroxide"]')?.value || null,
+            abs_232: absorptionReadings[0],
+            abs_266: absorptionReadings[1],
+            abs_270: absorptionReadings[2],
+            abs_274: absorptionReadings[3],
+            delta_k: absorptionReadings[4],
+            stigmastadiene: row.querySelector('input[name="stigmastadiene"]')?.value || null
+          };
+          items.push(item);
+        });
+
+        // Calculate totals
+        const total_quantity = items.reduce((sum, item) => sum + (parseFloat(item.quantity) || 0), 0);
+        const total_weight = items.reduce((sum, item) => sum + (parseFloat(item.total_weight) || 0), 0);
+
+        // Get form data
+        const formData = {
+          type: 'external',
+          certificate_number: form.querySelector('input[name="certificate_number"]').value,
+          customer_name: form.querySelector('[name="customer_name"]')?.value || null,
+          customer_phone: form.querySelector('[name="customer_phone"]')?.value || null,
+          customer_address: form.querySelector('[name="customer_address"]')?.value || null,
+          analyst: form.querySelector('[name="analyst"]')?.value || null,
+          notes: form.querySelector('[name="notes"]')?.value || null,
+          total_quantity: total_quantity,
+          total_weight: total_weight,
+          items: items
+        };
+
+        // Send data to server
+        const response = await fetch('/certificates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          window.location.href = `/certificates/${result.certificate_id}`;
+        } else {
+          throw new Error(result.message || 'حدث خطأ أثناء إنشاء الشهادة');
+        }
+
+      } catch (error) {
+        console.error('Error:', error);
+        alert(error.message || 'حدث خطأ أثناء إنشاء الشهادة');
+      }
+    });
+  }
+
+  // Initialize listeners for existing inputs
+  addAbsorptionReadingsListeners();
+});
+
+function addExternalSample() {
+  const tbody = document.getElementById('externalSamplesBody');
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type="number" class="form-control form-control-sm" name="quantity"></td>
+    <td><input type="text" class="form-control form-control-sm" name="packaging_unit"></td>
+    <td><input type="number" class="form-control form-control-sm" name="packaging_weight" step="0.001"></td>
+    <td><input type="number" class="form-control form-control-sm" name="total_weight" step="0.001"></td>
+    <td><input type="number" class="form-control form-control-sm" name="ph" step="0.001"></td>
+    <td><input type="number" class="form-control form-control-sm" name="peroxide" step="0.001"></td>
+    <td><input type="text" class="form-control form-control-sm absorption-readings-input" name="absorption_readings" placeholder="أدخل 5 قيم مفصولة بـ Tab"></td>
+    <td><input type="number" class="form-control form-control-sm" name="stigmastadiene" step="0.001"></td>
+    <td><button type="button" class="btn btn-sm btn-danger remove-sample-btn"><i class="bi bi-trash"></i></button></td>
+  `;
+  tbody.appendChild(row);
+  
+  // Add event listeners for the new absorption readings input
+  const newInput = row.querySelector('.absorption-readings-input');
+  if (newInput) {
+    newInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const currentRow = e.target.closest('tr');
+        const inputs = currentRow.querySelectorAll('input');
+        const currentIndex = Array.from(inputs).indexOf(e.target);
+        
+        if (currentIndex < inputs.length - 1) {
+          inputs[currentIndex + 1].focus();
+        }
+      }
+    });
+    
+    newInput.addEventListener('input', function(e) {
+      const value = e.target.value;
+      if (value.includes(',')) {
+        e.target.value = value.replace(/,/g, '\t');
+      }
+    });
+  }
+}
+</script>
+
+<style>
+/* تحسين مظهر حقل قراءات الامتصاص */
+.absorption-readings-input {
+  min-width: 200px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  direction: ltr;
+  text-align: left;
+}
+
+.absorption-readings-input:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.absorption-readings-input::placeholder {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+/* تحسين مظهر الجدول */
+.table td {
+  padding: 0.5rem;
+  vertical-align: middle;
+}
+
+.table th {
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+/* تحسين مظهر الأزرار */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+</style> 

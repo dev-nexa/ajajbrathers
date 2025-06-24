@@ -1,0 +1,301 @@
+<%- include('../layouts/header') %>
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+      <i class="fas fa-trash text-danger"></i> سلة المحذوفات
+    </h2>
+    <div class="d-flex gap-2">
+      <a href="/inventory" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-right"></i> العودة للمخزون
+      </a>
+      <% if (user && user.role==='editor' ) { %>
+        <button type="button" class="btn btn-success" id="restoreSelectedBtn" disabled>
+          <i class="fas fa-undo"></i> استعادة المحدد
+        </button>
+        <button type="button" class="btn btn-danger" id="emptyTrashBtn">
+          <i class="fas fa-trash"></i> تفريغ سلة المحذوفات
+        </button>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card shadow mb-4">
+    <div class="card-body">
+      <form id="filterForm" class="row g-3 align-items-end">
+        <div class="col-12 col-md-3 mb-2 mb-md-0">
+          <label class="form-label">التاريخ</label>
+          <input type="text" class="form-control datepicker" name="date" value="<%= locals.filters?.date || '' %>" placeholder="يوم/شهر/سنة">
+        </div>
+        <div class="col-12 col-md-3 mb-2 mb-md-0">
+          <label class="form-label">المورد/العينة</label>
+          <input type="text" class="form-control" name="supplier" value="<%= locals.filters?.supplier || '' %>"
+            placeholder="اسم المورد أو العينة">
+        </div>
+        <div class="col-12 col-md-3 mb-2 mb-md-0">
+          <label class="form-label">رقم العينة</label>
+          <input type="text" class="form-control" name="sample_number"
+            value="<%= locals.filters?.sample_number || '' %>" placeholder="رقم العينة">
+        </div>
+        <div class="col-12 col-md-3 d-flex flex-wrap gap-2">
+          <button type="submit" class="btn btn-primary flex-fill">
+            <i class="fas fa-search me-1"></i> بحث
+          </button>
+          <button type="button" class="btn btn-outline-secondary flex-fill" id="reloadBtn">
+            <i class="fas fa-redo me-1"></i> تحديث
+          </button>
+          <button type="button" class="btn btn-outline-info flex-fill" id="clearFiltersBtn">
+            <i class="fas fa-filter me-1"></i> تصفية الفلاتر
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Deleted Items Table -->
+  <div class="card shadow">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+      <h6 class="m-0 font-weight-bold text-primary">العينات المحذوفة (<%= deletedItems.length %>)</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th><input type="checkbox" class="form-check-input" id="selectAll"></th>
+              <th>#</th>
+              <th>التاريخ</th>
+              <th>رقم العينة</th>
+              <th>المورد/العينة</th>
+              <th>الكمية الأساسية</th>
+              <th>الكمية الحالية</th>
+              <th>الوزن الصافي</th>
+              <th>درجة الحموضة</th>
+              <th>رقم البيروكسيد</th>
+              <th>تاريخ الحذف</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% deletedItems.forEach(function(item, index) { %>
+              <tr>
+                <td>
+                  <input type="checkbox" class="form-check-input item-checkbox" data-id="<%= item.id %>">
+                </td>
+                <td><%= index + 1 %></td>
+                <td><%= new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
+                <td><%= item.sample_number %></td>
+                <td><%= item.supplier_or_sample_name %></td>
+                <td><%= formatNumberDisplay(item.base_quantity) %></td>
+                <td><%= formatNumberDisplay(item.current_quantity) %></td>
+                <td><%= formatNumberDisplay(item.net_weight_total) %></td>
+                <td><%= formatNumberDisplay(item.ph) %></td>
+                <td><%= formatNumberDisplay(item.peroxide_value) %></td>
+                <td><%= new Date(item.deleted_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
+                <td>
+                  <a href="/inventory/<%= item.id %>" class="btn btn-sm btn-info" title="معاينة العينة">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <% if (user && user.role==='editor' ) { %>
+                    <button type="button" class="btn btn-sm btn-success restore-btn" data-id="<%= item.id %>" title="استعادة العينة">
+                      <i class="fas fa-undo"></i>
+                    </button>
+                  <% } %>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      
+      <% if (deletedItems.length === 0) { %>
+        <div class="text-center py-5">
+          <i class="fas fa-trash text-muted" style="font-size: 3rem;"></i>
+          <h5 class="text-muted mt-3">لا توجد عينات محذوفة</h5>
+          <p class="text-muted">العينات المحذوفة ستظهر هنا</p>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select All functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
+
+    function updateRestoreButton() {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        if (restoreSelectedBtn) {
+            restoreSelectedBtn.disabled = checkedBoxes.length === 0;
+        }
+    }
+
+    selectAllCheckbox?.addEventListener('change', function() {
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateRestoreButton();
+    });
+
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+            const anyChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+            }
+            updateRestoreButton();
+        });
+    });
+
+    // Restore individual item
+    document.querySelectorAll('.restore-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const itemId = this.dataset.id;
+            if (confirm('هل أنت متأكد من استعادة هذه العينة؟')) {
+                restoreItem(itemId);
+            }
+        });
+    });
+
+    // Restore multiple items
+    restoreSelectedBtn?.addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('.item-checkbox:checked');
+        if (checkedBoxes.length === 0) {
+            alert('يرجى اختيار عينة واحدة على الأقل');
+            return;
+        }
+
+        if (confirm(`هل أنت متأكد من استعادة ${checkedBoxes.length} عينة؟`)) {
+            const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            restoreMultipleItems(ids);
+        }
+    });
+
+    // Filter functionality
+    const filterForm = document.getElementById('filterForm');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+
+    reloadBtn?.addEventListener('click', function() {
+        window.location.reload();
+    });
+
+    clearFiltersBtn?.addEventListener('click', function() {
+        window.location.href = '/inventory/deleted';
+    });
+
+    // Restore functions
+    function restoreItem(itemId) {
+        fetch(`/inventory/${itemId}/restore`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'حدث خطأ أثناء استعادة العينة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء استعادة العينة');
+        });
+    }
+
+    function restoreMultipleItems(ids) {
+        fetch('/inventory/restore-multiple', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ids })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'حدث خطأ أثناء استعادة العينات');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء استعادة العينات');
+        });
+    }
+
+    // Initialize Flatpickr
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr(".datepicker", {
+            locale: "ar",
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+    }
+
+    // تفريغ سلة المحذوفات
+    const emptyTrashBtn = document.getElementById('emptyTrashBtn');
+    if (emptyTrashBtn) {
+        emptyTrashBtn.addEventListener('click', function() {
+            if (confirm('هل أنت متأكد من حذف جميع العينات المحذوفة نهائياً؟ لا يمكن التراجع!')) {
+                fetch('/inventory/empty-trash', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'حدث خطأ أثناء التفريغ');
+                    }
+                })
+                .catch(() => alert('حدث خطأ أثناء التفريغ'));
+            }
+        });
+    }
+});
+</script>

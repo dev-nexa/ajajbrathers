@@ -1,0 +1,700 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+
+<div class="container mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="mb-0">
+        <i class="bi bi-pencil-square me-2"></i> تعديل الفاتورة رقم <%= invoice.invoice_number %>
+      </h5>
+    </div>
+    <div class="card-body">
+      <form id="invoiceForm" class="needs-validation" novalidate>
+        <input type="hidden" name="_method" value="PUT">
+        
+        <!-- Invoice Details -->
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label required">رقم الفاتورة</label>
+            <input type="text" class="form-control" name="invoice_number" value="<%= invoice.invoice_number %>" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label required">اسم العميل</label>
+            <input type="text" class="form-control" name="customer_name" value="<%= invoice.customer_name %>" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">اسم السائق</label>
+            <input type="text" class="form-control" name="driver_name" value="<%= invoice.driver_name || '' %>">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label required">تاريخ الفاتورة</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="invoiceDate" name="date" 
+                     value="<%= new Date(invoice.date).toLocaleDateString('en-GB') %>" 
+                     placeholder="يوم/شهر/سنة" readonly>
+              <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#datePickerModal">
+                <i class="bi bi-calendar"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-12">
+            <label class="form-label">ملاحظات</label>
+            <textarea class="form-control" name="notes" rows="2"><%= invoice.notes || '' %></textarea>
+          </div>
+        </div>
+
+        <!-- Samples Selection -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">العينات المرفقة بالفاتورة</h5>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#selectSampleModal">
+              <i class="bi bi-plus-circle me-1"></i> إضافة عينة
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>رقم العينة</th>
+                  <th>المورد/العينة</th>
+                  <th>الكمية المأخوذة</th>
+                  <th>الكمية المتوفرة قبل الأخذ</th>
+                  <th>درجة الحموضة</th>
+                  <th>رقم البيروكسيد</th>
+                  <th>232</th>
+                  <th>266</th>
+                  <th>270</th>
+                  <th>274</th>
+                  <th>دلتا k</th>
+                  <th>حذف</th>
+                </tr>
+              </thead>
+              <tbody id="selectedSamplesBody">
+                <% items.forEach(item => { %>
+                  <tr data-sample-id="<%= item.inventory_id %>">
+                    <td><%= formatNumberDisplay(item.sample_number) %></td>
+                    <td><%= item.supplier_or_sample_name || 'غير محدد' %></td>
+                    <td>
+                      <input type="number" class="form-control form-control-sm quantity-input" 
+                             data-inventory-id="<%= item.inventory_id %>"
+                             value="<%= item.quantity %>" 
+                             min="0.01" step="0.01" 
+                             data-available="<%= item.available_quantity %>">
+                    </td>
+                    <td><%= formatNumberDisplay(item.available_quantity) %></td>
+                    <td><%= formatNumberDisplay(item.ph) %></td>
+                    <td><%= formatNumberDisplay(item.peroxide_value) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_232) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_266) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_270) %></td>
+                    <td><%= formatNumberDisplay(item.absorption_274) %></td>
+                    <td><%= formatNumberDisplay(item.delta_k) %></td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-danger remove-sample-btn" 
+                              data-inventory-id="<%= item.inventory_id %>">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="/invoices/<%= invoice.id %>" class="btn btn-secondary">
+            <i class="bi bi-x-circle me-1"></i> إلغاء
+          </a>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-save me-1"></i> حفظ التغييرات
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Date Picker Modal -->
+<div class="modal fade" id="datePickerModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">اختيار التاريخ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-4">
+            <label class="form-label">اليوم</label>
+            <select class="form-select" id="daySelect">
+              <% for(let i = 1; i <= 31; i++) { %>
+                <option value="<%= i.toString().padStart(2, '0') %>"><%= i %></option>
+              <% } %>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">الشهر</label>
+            <select class="form-select" id="monthSelect">
+              <% for(let i = 1; i <= 12; i++) { %>
+                <option value="<%= i.toString().padStart(2, '0') %>"><%= i %></option>
+              <% } %>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">السنة</label>
+            <select class="form-select" id="yearSelect">
+              <% for(let i = new Date().getFullYear() - 5; i <= new Date().getFullYear() + 1; i++) { %>
+                <option value="<%= i %>"><%= i %></option>
+              <% } %>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmDate">تأكيد</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sample Selection Modal -->
+<div class="modal fade" id="selectSampleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">اختيار عينة من المخزون</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Search Box -->
+        <div class="search-container mb-3">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" 
+                   class="form-control border-start-0 ps-0" 
+                   id="sampleSearchInput" 
+                   placeholder="البحث في رقم العينة أو اسم المورد..."
+                   autocomplete="off">
+            <button type="button" class="btn btn-outline-secondary border-start-0" id="clearSearchBtn" style="display: none;">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="table-responsive modal-table-container">
+          <table class="table table-hover">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>رقم العينة</th>
+                <th>المورد/العينة</th>
+                <th>الكمية المتوفرة</th>
+                <th>درجة الحموضة</th>
+                <th>رقم البيروكسيد</th>
+                <th>إضافة</th>
+              </tr>
+            </thead>
+            <tbody id="samplesTableBody">
+              <% inventory.forEach(item => { %>
+                <tr data-sample-id="<%= item.id %>" class="sample-row">
+                  <td class="sample-number"><%= item.sample_number %></td>
+                  <td class="supplier-name"><%= item.supplier_or_sample_name %></td>
+                  <td><%= formatNumberDisplay(item.current_quantity) %></td>
+                  <td><%= formatNumberDisplay(item.ph) %></td>
+                  <td><%= formatNumberDisplay(item.peroxide_value) %></td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-success add-sample-btn" 
+                            data-id="<%= item.id %>"
+                            data-sample-number="<%= item.sample_number %>"
+                            data-supplier="<%= item.supplier_or_sample_name %>"
+                            data-quantity="<%= item.current_quantity %>"
+                            data-ph="<%= item.ph %>"
+                            data-peroxide="<%= item.peroxide_value %>"
+                            data-absorption-readings="<%= item.absorption_readings || '' %>"
+                            data-sigma-absorbance="<%= item.sigma_absorbance || '' %>">
+                      <i class="bi bi-plus-circle"></i>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.required:after {
+  content: " *";
+  color: red;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-container .input-group {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.search-container .input-group-text {
+  border: 1px solid #dee2e6;
+  border-right: none;
+}
+
+.search-container .form-control {
+  border: 1px solid #dee2e6;
+  border-left: none;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.search-container .form-control:focus {
+  box-shadow: none;
+  border-color: #198754;
+}
+
+.search-container .btn {
+  border: 1px solid #dee2e6;
+  border-left: none;
+  padding: 12px 16px;
+}
+
+.search-container .btn:hover {
+  background-color: #f8f9fa;
+  border-color: #198754;
+}
+
+.sample-row.hidden {
+  display: none !important;
+}
+
+.sample-row.highlight {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107;
+}
+
+#clearSearchBtn {
+  transition: all 0.3s ease;
+}
+
+#clearSearchBtn:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.quantity-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.quantity-input.success {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Modal Table Scroll Styles */
+.modal-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.modal-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.modal-table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.modal-table-container .table {
+  margin-bottom: 0;
+}
+
+.modal-table-container .sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.modal-table-container .table thead th {
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  padding: 12px 8px;
+  font-size: 14px;
+}
+
+.modal-table-container .table tbody td {
+  padding: 10px 8px;
+  vertical-align: middle;
+  border-top: 1px solid #f8f9fa;
+}
+
+.modal-table-container .table tbody tr:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal-table-container {
+    max-height: 300px;
+  }
+  
+  .modal-table-container .table thead th,
+  .modal-table-container .table tbody td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+}
+</style>
+
+<script>
+const items = <%- JSON.stringify(items) %>;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('invoiceForm');
+  const selectedSamples = new Map();
+  
+  // Initialize existing samples
+  items.forEach(item => {
+    selectedSamples.set(item.inventory_id, {
+      id: item.inventory_id,
+      sample_number: item.sample_number,
+      supplier_name: item.supplier_or_sample_name || 'غير محدد',
+      quantity: item.quantity,
+      available_quantity: item.available_quantity,
+      ph: item.ph,
+      peroxide_value: item.peroxide_value,
+      absorption_232: item.absorption_232,
+      absorption_266: item.absorption_266,
+      absorption_270: item.absorption_270,
+      absorption_274: item.absorption_274,
+      delta_k: item.delta_k
+    });
+  });
+
+  // Date picker functionality
+  const dateInput = document.getElementById('invoiceDate');
+  const daySelect = document.getElementById('daySelect');
+  const monthSelect = document.getElementById('monthSelect');
+  const yearSelect = document.getElementById('yearSelect');
+  const confirmDateBtn = document.getElementById('confirmDate');
+
+  // Set current date in picker
+  const currentDate = new Date('<%= invoice.date %>');
+  daySelect.value = currentDate.getDate().toString().padStart(2, '0');
+  monthSelect.value = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+  yearSelect.value = currentDate.getFullYear();
+
+  confirmDateBtn.addEventListener('click', function() {
+    const day = daySelect.value;
+    const month = monthSelect.value;
+    const year = yearSelect.value;
+    dateInput.value = `${day}/${month}/${year}`;
+    bootstrap.Modal.getInstance(document.getElementById('datePickerModal')).hide();
+  });
+
+  // Quantity input validation
+  document.querySelectorAll('.quantity-input').forEach(input => {
+    input.addEventListener('input', function() {
+      const quantity = parseFloat(this.value) || 0;
+      const available = parseFloat(this.dataset.available) || 0;
+      
+      this.classList.remove('error', 'success');
+      
+      if (quantity > available) {
+        this.classList.add('error');
+        this.setCustomValidity(`الكمية المطلوبة (${quantity}) أكبر من المتوفرة (${available})`);
+      } else if (quantity <= 0) {
+        this.classList.add('error');
+        this.setCustomValidity('يجب أن تكون الكمية أكبر من صفر');
+      } else {
+        this.classList.add('success');
+        this.setCustomValidity('');
+      }
+    });
+  });
+
+  // Remove sample functionality
+  document.querySelectorAll('.remove-sample-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const inventoryId = this.dataset.inventoryId;
+      selectedSamples.delete(inventoryId);
+      this.closest('tr').remove();
+    });
+  });
+
+  // Search functionality
+  const searchInput = document.getElementById('sampleSearchInput');
+  const clearSearchBtn = document.getElementById('clearSearchBtn');
+  const sampleRows = document.querySelectorAll('.sample-row');
+  
+  function performSearch(searchTerm) {
+    const term = searchTerm.toLowerCase().trim();
+    
+    sampleRows.forEach(row => {
+      const sampleNumber = row.querySelector('.sample-number')?.textContent?.toLowerCase() || '';
+      const supplierName = row.querySelector('.supplier-name')?.textContent?.toLowerCase() || '';
+      
+      const matches = sampleNumber.includes(term) || supplierName.includes(term);
+      
+      if (matches) {
+        row.classList.remove('hidden');
+        row.classList.add('highlight');
+      } else {
+        row.classList.add('hidden');
+        row.classList.remove('highlight');
+      }
+    });
+    
+    if (term.length > 0) {
+      clearSearchBtn.style.display = 'block';
+    } else {
+      clearSearchBtn.style.display = 'none';
+      sampleRows.forEach(row => {
+        row.classList.remove('highlight');
+      });
+    }
+  }
+  
+  searchInput.addEventListener('input', function() {
+    performSearch(this.value);
+  });
+  
+  clearSearchBtn.addEventListener('click', function() {
+    searchInput.value = '';
+    performSearch('');
+    searchInput.focus();
+  });
+
+  // Add sample functionality
+  document.querySelectorAll('.add-sample-btn').forEach(button => {
+    button.addEventListener('click', function() {
+      const id = this.dataset.id;
+      
+      if (selectedSamples.has(id)) {
+        alert('هذه العينة مضافة بالفعل');
+        return;
+      }
+
+      const sample = {
+        id: id,
+        sample_number: this.dataset.sampleNumber,
+        supplier_name: this.dataset.supplier,
+        quantity: 1, // Default quantity
+        available_quantity: parseFloat(this.dataset.quantity),
+        ph: parseFloat(this.dataset.ph) || 0,
+        peroxide_value: parseFloat(this.dataset.peroxide) || 0,
+        absorption_232: 0,
+        absorption_266: 0,
+        absorption_270: 0,
+        absorption_274: 0,
+        delta_k: 0
+      };
+
+      // Parse absorption readings
+      if (this.dataset.absorptionReadings) {
+        const readings = this.dataset.absorptionReadings.split(' ').map(Number);
+        if (readings.length >= 5) {
+          sample.absorption_232 = readings[0] || 0;
+          sample.absorption_266 = readings[1] || 0;
+          sample.absorption_270 = readings[2] || 0;
+          sample.absorption_274 = readings[3] || 0;
+          sample.delta_k = readings[4] || 0;
+        }
+      }
+
+      selectedSamples.set(id, sample);
+      addSampleToTable(sample);
+      bootstrap.Modal.getInstance(document.getElementById('selectSampleModal')).hide();
+    });
+  });
+
+  function addSampleToTable(sample) {
+    const tbody = document.getElementById('selectedSamplesBody');
+    const tr = document.createElement('tr');
+    tr.dataset.sampleId = sample.id;
+    
+    tr.innerHTML = `
+      <td>${sample.sample_number}</td>
+      <td>${sample.supplier_name}</td>
+      <td>
+        <input type="number" class="form-control form-control-sm quantity-input" 
+               data-inventory-id="${sample.id}"
+               value="${sample.quantity}" 
+               min="0.01" step="0.01" 
+               data-available="${sample.available_quantity}">
+      </td>
+      <td>${sample.available_quantity}</td>
+      <td>${sample.ph}</td>
+      <td>${sample.peroxide_value}</td>
+      <td>${sample.absorption_232}</td>
+      <td>${sample.absorption_266}</td>
+      <td>${sample.absorption_270}</td>
+      <td>${sample.absorption_274}</td>
+      <td>${sample.delta_k}</td>
+      <td>
+        <button type="button" class="btn btn-sm btn-danger remove-sample-btn" 
+                data-inventory-id="${sample.id}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>
+    `;
+    
+    tbody.appendChild(tr);
+    
+    // Add event listeners to new row
+    const quantityInput = tr.querySelector('.quantity-input');
+    quantityInput.addEventListener('input', function() {
+      const quantity = parseFloat(this.value) || 0;
+      const available = parseFloat(this.dataset.available) || 0;
+      
+      this.classList.remove('error', 'success');
+      
+      if (quantity > available) {
+        this.classList.add('error');
+        this.setCustomValidity(`الكمية المطلوبة (${quantity}) أكبر من المتوفرة (${available})`);
+      } else if (quantity <= 0) {
+        this.classList.add('error');
+        this.setCustomValidity('يجب أن تكون الكمية أكبر من صفر');
+      } else {
+        this.classList.add('success');
+        this.setCustomValidity('');
+      }
+    });
+    
+    const removeBtn = tr.querySelector('.remove-sample-btn');
+    removeBtn.addEventListener('click', function() {
+      selectedSamples.delete(sample.id);
+      tr.remove();
+    });
+  }
+
+  // Form submission
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (selectedSamples.size === 0) {
+      alert('يجب اختيار عينة واحدة على الأقل');
+      return;
+    }
+
+    // Validate quantities
+    let hasError = false;
+    document.querySelectorAll('.quantity-input').forEach(input => {
+      if (!input.checkValidity()) {
+        input.reportValidity();
+        hasError = true;
+      }
+    });
+
+    if (hasError) return;
+
+    // Build quantities object from current input values
+    const quantities = {};
+    document.querySelectorAll('.quantity-input').forEach(input => {
+      const id = input.dataset.inventoryId;
+      const qty = parseFloat(input.value) || 0;
+      quantities[id] = qty;
+    });
+
+    try {
+      const formData = {
+        invoice_number: form.querySelector('input[name="invoice_number"]').value,
+        customer_name: form.querySelector('input[name="customer_name"]').value,
+        driver_name: form.querySelector('input[name="driver_name"]').value,
+        date: form.querySelector('input[name="date"]').value,
+        notes: form.querySelector('textarea[name="notes"]').value,
+        quantities: quantities
+      };
+
+      const response = await fetch('/invoices/<%= invoice.id %>', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        window.location.href = `/invoices/<%= invoice.id %>`;
+      } else {
+        alert(data.message || 'حدث خطأ أثناء حفظ التغييرات');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('حدث خطأ أثناء حفظ التغييرات');
+    }
+  });
+
+  // Clear search on modal close
+  const modal = document.getElementById('selectSampleModal');
+  if (modal) {
+    modal.addEventListener('hidden.bs.modal', function() {
+      searchInput.value = '';
+      performSearch('');
+    });
+  }
+});
+</script>

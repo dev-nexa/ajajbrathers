@@ -1,0 +1,182 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+      <i class="fas fa-trash text-danger"></i> سلة محذوفات الفواتير
+    </h2>
+    <div class="d-flex gap-2">
+      <a href="/invoices" class="btn btn-outline-primary">
+        <i class="fas fa-arrow-right"></i> العودة للفواتير
+      </a>
+      <button type="button" class="btn btn-success" id="restoreSelectedBtn" disabled>
+        <i class="fas fa-undo"></i> استعادة المحدد
+      </button>
+      <button type="button" class="btn btn-danger" id="emptyTrashBtn">
+        <i class="fas fa-trash"></i> تفريغ سلة المحذوفات
+      </button>
+    </div>
+  </div>
+  <div class="card shadow">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAllDeleted"></th>
+              <th>#</th>
+              <th>رقم الفاتورة</th>
+              <th>التاريخ</th>
+              <th>اسم العميل</th>
+              <th>اسم السائق</th>
+              <th>الكمية الإجمالية</th>
+              <th>الوزن الإجمالي</th>
+              <th>ملاحظات</th>
+              <th>تاريخ الحذف</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (deletedInvoices && deletedInvoices.length > 0) { %>
+              <% deletedInvoices.forEach((invoice, index) => { %>
+                <tr>
+                  <td><input type="checkbox" class="deleted-invoice-checkbox" data-id="<%= invoice.id %>"></td>
+                  <td><%= index + 1 %></td>
+                  <td><%= invoice.invoice_number %></td>
+                  <td><%= new Date(invoice.date).toLocaleDateString('en-GB') %></td>
+                  <td><%= invoice.customer_name %></td>
+                  <td><%= invoice.driver_name || '-' %></td>
+                  <td><%= invoice.total_quantity_tanks ? Number(invoice.total_quantity_tanks).toFixed(2) : '0.00' %></td>
+                  <td><%= invoice.total_quantity_liters ? Number(invoice.total_quantity_liters).toFixed(2) : '0.00' %></td>
+                  <td><%= invoice.notes || '-' %></td>
+                  <td><%= new Date(invoice.deleted_at).toLocaleDateString('en-GB') %></td>
+                  <td>
+                    <button type="button" class="btn btn-sm btn-success restore-btn" data-id="<%= invoice.id %>" title="استعادة الفاتورة">
+                      <i class="fas fa-undo"></i>
+                    </button>
+                    <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-info" title="معاينة"></a>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="11" class="text-center py-4">
+                  <div class="text-muted">
+                    <i class="fas fa-trash fa-2x mb-3"></i>
+                    <p class="mb-0">لا توجد فواتير محذوفة</p>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Select All functionality
+  const selectAllCheckbox = document.getElementById('selectAllDeleted');
+  const itemCheckboxes = document.querySelectorAll('.deleted-invoice-checkbox');
+  const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
+  const emptyTrashBtn = document.getElementById('emptyTrashBtn');
+
+  function updateRestoreButton() {
+    const checkedBoxes = document.querySelectorAll('.deleted-invoice-checkbox:checked');
+    restoreSelectedBtn.disabled = checkedBoxes.length === 0;
+  }
+
+  selectAllCheckbox?.addEventListener('change', function() {
+    itemCheckboxes.forEach(checkbox => {
+      checkbox.checked = this.checked;
+    });
+    updateRestoreButton();
+  });
+
+  itemCheckboxes.forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+      const anyChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+      if (selectAllCheckbox) {
+        selectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = anyChecked && !allChecked;
+      }
+      updateRestoreButton();
+    });
+  });
+
+  // Restore individual invoice
+  document.querySelectorAll('.restore-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const invoiceId = this.dataset.id;
+      if (confirm('هل أنت متأكد من استعادة هذه الفاتورة؟')) {
+        restoreInvoice(invoiceId);
+      }
+    });
+  });
+
+  // Restore multiple invoices
+  restoreSelectedBtn?.addEventListener('click', function() {
+    const checkedBoxes = document.querySelectorAll('.deleted-invoice-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+      alert('يرجى اختيار فاتورة واحدة على الأقل');
+      return;
+    }
+    if (confirm(`هل أنت متأكد من استعادة ${checkedBoxes.length} فاتورة؟`)) {
+      const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+      restoreMultipleInvoices(ids);
+    }
+  });
+
+  // Empty trash
+  emptyTrashBtn?.addEventListener('click', function() {
+    if (confirm('هل أنت متأكد من حذف جميع الفواتير المحذوفة نهائياً؟ لا يمكن التراجع!')) {
+      fetch('/invoices/empty-trash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.message || 'حدث خطأ أثناء التفريغ');
+        }
+      })
+      .catch(() => alert('حدث خطأ أثناء التفريغ'));
+    }
+  });
+
+  // Restore functions
+  function restoreInvoice(invoiceId) {
+    fetch(`/invoices/${invoiceId}/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء الاستعادة');
+      }
+    })
+    .catch(() => alert('حدث خطأ أثناء الاستعادة'));
+  }
+  function restoreMultipleInvoices(ids) {
+    fetch('/invoices/restore-multiple', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        window.location.reload();
+      } else {
+        alert(data.message || 'حدث خطأ أثناء الاستعادة');
+      }
+    })
+    .catch(() => alert('حدث خطأ أثناء الاستعادة'));
+  }
+});
+</script> 

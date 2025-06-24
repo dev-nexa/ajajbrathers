@@ -1,0 +1,276 @@
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>سلة المحذوفات - الشهادات</h2>
+        <div class="d-flex gap-2">
+            <button id="restoreSelectedBtn" class="btn btn-success" disabled>
+                <i class="fas fa-undo me-1"></i> استعادة المحدد
+            </button>
+            <button id="emptyTrashBtn" class="btn btn-danger">
+                <i class="fas fa-trash me-1"></i> تفريغ السلة
+            </button>
+            <a href="/certificates" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-1"></i> العودة للشهادات
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAllDeletedCertificates"></th>
+                            <th>رقم الشهادة</th>
+                            <th>التاريخ</th>
+                            <th>اسم العميل</th>
+                            <th>نوع العينة</th>
+                            <th>تاريخ الحذف</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (deleted && deleted.length > 0) { %>
+                            <% deleted.forEach(certificate => { %>
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="deleted-certificate-checkbox" data-id="<%= certificate.id %>">
+                                    </td>
+                                    <td><%= certificate.certificate_number %></td>
+                                    <td><%= new Date(certificate.date).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></td>
+                                    <td><%= certificate.customer_name %></td>
+                                    <td>
+                                        <% if (certificate.type === 'internal') { %>
+                                            داخلية
+                                        <% } else { %>
+                                            خارجية
+                                        <% } %>
+                                    </td>
+                                    <td><%= new Date(certificate.deleted_at).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-success restore-certificate" data-id="<%= certificate.id %>" title="استعادة">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                            <a href="/certificates/<%= certificate.id %>" class="btn btn-sm btn-info" title="معاينة">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7" class="text-center">لا توجد شهادات محذوفة</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty Trash Confirmation Modal -->
+<div class="modal fade" id="emptyTrashModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    تأكيد تفريغ السلة
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من تفريغ سلة المحذوفات؟</p>
+                <p class="text-danger"><strong>تحذير:</strong> هذا الإجراء سيحذف جميع الشهادات المحذوفة نهائياً ولا يمكن التراجع عنه.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    إلغاء
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmEmptyTrash">
+                    <i class="fas fa-trash me-1"></i>
+                    تفريغ السلة
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all functionality
+    const selectAllCheckbox = document.getElementById('selectAllDeletedCertificates');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.deleted-certificate-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateRestoreButton();
+        });
+    }
+
+    // Handle individual checkboxes
+    const checkboxes = document.querySelectorAll('.deleted-certificate-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateRestoreButton();
+            
+            // Update the select all checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllDeletedCertificates');
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+
+    // Update restore button state
+    function updateRestoreButton() {
+        const checkedBoxes = document.querySelectorAll('.deleted-certificate-checkbox:checked');
+        const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
+        
+        if (restoreSelectedBtn) {
+            if (checkedBoxes.length > 0) {
+                restoreSelectedBtn.disabled = false;
+                restoreSelectedBtn.classList.remove('btn-outline-success');
+                restoreSelectedBtn.classList.add('btn-success');
+            } else {
+                restoreSelectedBtn.disabled = true;
+                restoreSelectedBtn.classList.remove('btn-success');
+                restoreSelectedBtn.classList.add('btn-outline-success');
+            }
+        }
+    }
+
+    // Handle restore selected button click
+    const restoreSelectedBtn = document.getElementById('restoreSelectedBtn');
+    if (restoreSelectedBtn) {
+        restoreSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.deleted-certificate-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                alert('يرجى اختيار شهادة واحدة على الأقل للاستعادة');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من استعادة ${checkedBoxes.length} شهادة؟`)) {
+                return;
+            }
+
+            // Disable button and show loading
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الاستعادة...';
+
+            // Collect selected IDs
+            const selectedIds = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            
+            // Send restore request
+            fetch('/certificates/restore-multiple', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'حدث خطأ أثناء الاستعادة');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'حدث خطأ أثناء الاستعادة');
+                
+                // Re-enable button
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-undo me-1"></i> استعادة المحدد';
+            });
+        });
+    }
+
+    // Handle empty trash button click
+    const emptyTrashBtn = document.getElementById('emptyTrashBtn');
+    if (emptyTrashBtn) {
+        emptyTrashBtn.addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('emptyTrashModal'));
+            modal.show();
+        });
+    }
+
+    // Handle confirm empty trash
+    document.getElementById('confirmEmptyTrash').addEventListener('click', function() {
+        // Disable button and show loading
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري التفريغ...';
+
+        fetch('/certificates/empty-trash', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('emptyTrashModal'));
+            modal.hide();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                throw new Error(data.message || 'حدث خطأ أثناء تفريغ السلة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.message || 'حدث خطأ أثناء تفريغ السلة');
+            
+            // Re-enable button
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-trash me-1"></i> تفريغ السلة';
+        });
+    });
+
+    // Handle individual restore button clicks
+    document.querySelector('.table').addEventListener('click', function(e) {
+        const restoreBtn = e.target.closest('.restore-certificate');
+        if (restoreBtn) {
+            const certificateId = restoreBtn.dataset.id;
+            
+            if (confirm('هل أنت متأكد من استعادة هذه الشهادة؟')) {
+                fetch(`/certificates/${certificateId}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'حدث خطأ أثناء الاستعادة');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('حدث خطأ أثناء الاستعادة');
+                });
+            }
+        }
+    });
+
+    // Initialize restore button state
+    updateRestoreButton();
+});
+</script> 

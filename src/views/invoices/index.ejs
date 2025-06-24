@@ -1,0 +1,392 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-invoice"></i> الفواتير
+                </h2>
+                <div class="d-flex gap-2 mb-3">
+                    <button id="deleteSelectedBtn" class="btn btn-danger" disabled>حذف نهائي</button>
+                    <button id="trashSelectedBtn" class="btn btn-warning" disabled>نقل إلى سلة المحذوفات</button>
+                    <a href="/invoices/deleted" class="btn btn-primary">سلة المحذوفات</a>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <form id="filterForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">التاريخ</label>
+                            <input type="text" class="form-control datepicker" name="date" value="<%= locals.filters?.date || '' %>" placeholder="يوم/شهر/سنة">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">العميل</label>
+                            <input type="text" class="form-control" name="customer" value="<%= locals.filters?.customer || '' %>" placeholder="اسم العميل">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> بحث
+                            </button>
+                            <button type="button" class="btn btn-outline-success" id="filterTodayBtn">
+                                <i class="fas fa-calendar-day me-1"></i> عرض نتائج اليوم
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="clearFiltersBtn">
+                                <i class="fas fa-redo me-1"></i> تحديث
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Invoices Table -->
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="d-print-none">
+                                        <input type="checkbox" id="selectAllInvoices">
+                                    </th>
+                                    <th>#</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>التاريخ</th>
+                                    <th>اسم العميل</th>
+                                    <th>اسم السائق</th>
+                                    <th>الكمية الإجمالية</th>
+                                    <th>الوزن الإجمالي</th>
+                                    <th>ملاحظات</th>
+                                    <th class="d-print-none">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% if (invoices && invoices.length > 0) { %>
+                                    <% invoices.forEach((invoice, index) => { %>
+                                        <tr>
+                                            <td class="d-print-none">
+                                                <input type="checkbox" class="invoice-checkbox" data-id="<%= invoice.id %>">
+                                            </td>
+                                            <td><%= index + 1 %></td>
+                                            <td><%= invoice.invoice_number %></td>
+                                            <td><%= new Date(invoice.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
+                                            <td><%= invoice.customer_name %></td>
+                                            <td><%= invoice.driver_name || '-' %></td>
+                                            <td><%= formatNumberDisplay(invoice.total_quantity_tanks) %></td>
+                                            <td><%= formatNumberDisplay(invoice.total_quantity_liters) %></td>
+                                            <td><%= invoice.notes || '-' %></td>
+                                            <td class="d-print-none">
+                                                <div class="btn-group">
+                                                    <a href="/invoices/<%= invoice.id %>" class="btn btn-sm btn-info me-1" title="معاينة">
+                                                        <i class="bi bi-eye-fill"></i>
+                                                    </a>
+                                                    <a href="/invoices/<%= invoice.id %>/edit" class="btn btn-sm btn-warning me-1" title="تعديل">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="10" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="fas fa-file-invoice fa-2x mb-3"></i>
+                                                <p class="mb-0">لا توجد فواتير</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteInvoiceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف الفاتورة رقم <span id="invoiceNumber" class="fw-bold"></span>؟
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    إلغاء
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash me-1"></i>
+                    حذف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize Flatpickr on the date input
+document.addEventListener('DOMContentLoaded', function() {
+    const datepickerInput = flatpickr(".datepicker", {
+        locale: "ar",
+        dateFormat: "d/m/Y",
+        altFormat: "Y-m-d",
+        altInput: false,
+        allowInput: true
+    });
+
+    // Set the initial date value in Flatpickr if a filter date exists
+    <% if (locals.filters?.date) { %>
+        try {
+            const [year, month, day] = '<%= locals.filters.date %>'.split('-').map(Number);
+            const initialDate = new Date(year, month - 1, day);
+            datepickerInput.setDate(initialDate, true);
+        } catch (e) {
+            console.error("Error setting Flatpickr date:", e);
+        }
+    <% } %>
+
+    // Initialize filter today button
+    const filterTodayBtn = document.getElementById('filterTodayBtn');
+    if (filterTodayBtn) {
+        filterTodayBtn.addEventListener('click', filterToday);
+    }
+
+    // Initialize clear filters button
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+
+    // Initialize reset counter form
+    const resetCounterForm = document.getElementById('resetCounterForm');
+    if (resetCounterForm) {
+        resetCounterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('هل أنت متأكد من إعادة تعيين عداد الفواتير؟')) {
+                this.submit();
+            }
+        });
+    }
+
+    // Delete invoice functionality
+    let invoiceToDelete = null;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteInvoiceModal'));
+
+    // Handle delete button clicks
+    document.querySelector('.table').addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-invoice');
+        if (!deleteBtn) return;
+        
+        const invoiceId = deleteBtn.dataset.id;
+        const invoiceNumber = deleteBtn.closest('tr').querySelector('td:nth-child(2)').textContent;
+        
+        invoiceToDelete = invoiceId;
+        document.getElementById('invoiceNumber').textContent = invoiceNumber;
+        deleteModal.show();
+    });
+
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (!invoiceToDelete) return;
+        
+        fetch(`/invoices/${invoiceToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            deleteModal.hide();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'حدث خطأ أثناء حذف الفاتورة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء حذف الفاتورة');
+            deleteModal.hide();
+        });
+    });
+
+    // تفعيل وتعطيل أزرار التحكم الجماعي
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const trashSelectedBtn = document.getElementById('trashSelectedBtn');
+    const selectAllInvoices = document.getElementById('selectAllInvoices');
+    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+
+    function updateBulkButtons() {
+        const checked = document.querySelectorAll('.invoice-checkbox:checked').length;
+        if (deleteSelectedBtn) deleteSelectedBtn.disabled = checked === 0;
+        if (trashSelectedBtn) trashSelectedBtn.disabled = checked === 0;
+    }
+
+    selectAllInvoices?.addEventListener('change', function() {
+        invoiceCheckboxes.forEach(cb => { cb.checked = this.checked; });
+        updateBulkButtons();
+    });
+    invoiceCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const allChecked = Array.from(invoiceCheckboxes).every(cb => cb.checked);
+            selectAllInvoices.checked = allChecked;
+            updateBulkButtons();
+        });
+    });
+    updateBulkButtons();
+
+    // --- إضافة كود حذف الفواتير المحددة نهائياً ---
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('يرجى اختيار فاتورة واحدة على الأقل');
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من حذف ${checkedBoxes.length} فاتورة نهائياً؟`)) {
+                return;
+            }
+            const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            fetch('/invoices/delete-multiple', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء الحذف النهائي');
+                }
+            })
+            .catch(() => alert('حدث خطأ أثناء الحذف النهائي'));
+        });
+    }
+
+    // --- إضافة كود نقل الفواتير إلى سلة المحذوفات ---
+    if (trashSelectedBtn) {
+        trashSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.invoice-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('يرجى اختيار فاتورة واحدة على الأقل');
+                return;
+            }
+            if (!confirm(`هل أنت متأكد من نقل ${checkedBoxes.length} فاتورة إلى سلة المحذوفات؟`)) {
+                return;
+            }
+            const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            fetch('/invoices/trash-multiple', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء النقل إلى سلة المحذوفات');
+                }
+            })
+            .catch(() => alert('حدث خطأ أثناء النقل إلى سلة المحذوفات'));
+        });
+    }
+
+    // --- إصلاح رابط سلة المحذوفات ليعمل دائماً ---
+    const trashLink = document.querySelector('a[href="/invoices/deleted"]');
+    if (trashLink) {
+        trashLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/invoices/deleted';
+        });
+    }
+});
+
+// Handle filter form submission to format date correctly
+document.getElementById('filterForm').addEventListener('submit', function(event) {
+    const dateInput = this.querySelector('input[name="date"]');
+    if (dateInput && dateInput._flatpickr && dateInput._flatpickr.selectedDates.length > 0) {
+        const selectedDate = dateInput._flatpickr.selectedDates[0];
+        const year = selectedDate.getFullYear();
+        const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = selectedDate.getDate().toString().padStart(2, '0');
+        const yyyyMMddDate = `${year}-${month}-${day}`;
+        dateInput.value = yyyyMMddDate;
+    }
+});
+
+// Filter today's results
+function filterToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="date"]').value = today;
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+// Clear all filters
+function clearFilters() {
+    const datepicker = document.querySelector('input[name="date"]')._flatpickr;
+    if (datepicker) {
+        datepicker.clear();
+    }
+    document.querySelector('input[name="customer"]').value = '';
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+</script>
+
+<style>
+@media print {
+    .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .card-body { padding: 0 !important; }
+    .table { font-size: 0.9em; }
+    .table td, .table th { padding: 0.5rem !important; }
+    body { background: white !important; }
+    .container { max-width: 100% !important; }
+}
+</style> 

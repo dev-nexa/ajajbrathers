@@ -1,0 +1,423 @@
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">
+          <i class="fas fa-file-invoice"></i> إنشاء فاتورة جديدة
+        </h2>
+        <a href="/invoices" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-right me-1"></i> العودة للفواتير
+        </a>
+      </div>
+
+      <!-- Invoice Form -->
+      <div class="card shadow">
+        <div class="card-body">
+          <form id="invoiceForm" method="POST" action="/invoices/create">
+            <!-- Customer Details -->
+            <div class="row mb-4">
+              <div class="col-md-3">
+                <label class="form-label required">رقم الفاتورة</label>
+                <input type="number" class="form-control" name="invoice_number" id="invoice_number" required min="1">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label required">اسم العميل</label>
+                <input type="text" class="form-control" name="customer_name" required>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">اسم السائق</label>
+                <input type="text" class="form-control" name="driver_name">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label required">التاريخ</label>
+                <input type="date" class="form-control" name="date" id="invoice_date" required>
+              </div>
+            </div>
+
+            <!-- Inventory Selection -->
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">اختيار العينات</h5>
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#inventoryModal">
+                  <i class="fas fa-plus me-1"></i> إضافة عينة
+                </button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-hover" id="selectedItems">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>رقم العينة</th>
+                      <th>الكمية (تنكة)</th>
+                      <th>الوزن الصافي</th>
+                      <th>درجة الحموضة</th>
+                      <th>رقم البيروكسيد</th>
+                      <th>امتصاص 232</th>
+                      <th>امتصاص 270</th>
+                      <th>دلتا K</th>
+                      <th>الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="text-center text-muted" id="noItems">
+                      <td colspan="10">
+                        <i class="fas fa-box-open fa-2x mb-2"></i>
+                        <p class="mb-0">لم يتم اختيار أي عينات</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="2" class="text-start">المجموع:</td>
+                      <td id="totalQuantityTanks">0</td>
+                      <td id="totalQuantityLiters">0</td>
+                      <td id="avgPH">0</td>
+                      <td id="avgPeroxide">0</td>
+                      <td id="avg232">0</td>
+                      <td id="avg270">0</td>
+                      <td id="avgDeltaK">0</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-4">
+              <label class="form-label">ملاحظات</label>
+              <textarea class="form-control" name="notes" rows="3"></textarea>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i> حفظ الفاتورة
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Inventory Selection Modal -->
+<div class="modal fade" id="inventoryModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-boxes me-2"></i>
+          اختيار العينات
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Filters -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">التاريخ</label>
+            <input type="date" class="form-control" id="filterDate">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">رقم العينة</label>
+            <input type="text" class="form-control" id="filterSample" placeholder="رقم العينة">
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="table-responsive">
+          <table class="table table-hover" id="inventoryTable">
+            <thead>
+              <tr>
+                <th>اختيار</th>
+                <th>رقم العينة</th>
+                <th>الكمية المتوفرة</th>
+                <th>درجة الحموضة</th>
+                <th>رقم البيروكسيد</th>
+                <th>امتصاص 232</th>
+                <th>امتصاص 270</th>
+                <th>دلتا K</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>
+          إلغاء
+        </button>
+        <button type="button" class="btn btn-primary" id="addSelectedItems">
+          <i class="fas fa-plus me-1"></i>
+          إضافة المحدد
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+// للتأكد من تحميل السكريبت
+let selectedItems = new Map();
+
+// Load inventory items
+async function loadInventory() {
+  alert('Loading inventory...');
+  const date = document.getElementById('filterDate').value;
+  const sample = document.getElementById('filterSample').value;
+
+  try {
+    const response = await fetch(`/api/inventory?date=${date}&sample=${sample}`);
+    const data = await response.json();
+    alert('Inventory data loaded: ' + JSON.stringify(data));
+    
+    const tbody = document.querySelector('#inventoryTable tbody');
+    tbody.innerHTML = '';
+    
+    data.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input type="checkbox" class="form-check-input" value="${item.id}"
+                 data-ph="${item.ph}"
+                 data-peroxide="${item.peroxide_value}"
+                 data-abs232="${item.absorption_232}"
+                 data-abs270="${item.absorption_270}"
+                 data-deltak="${item.delta_k}">
+        </td>
+        <td>${item.sample_number}</td>
+        <td>${item.current_quantity}</td>
+        <td>${item.ph}</td>
+        <td>${item.peroxide_value}</td>
+        <td>${item.absorption_232}</td>
+        <td>${item.absorption_270}</td>
+        <td>${item.delta_k}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    alert('Error loading inventory: ' + error.message);
+  }
+}
+
+// Calculate weighted averages
+function calculateWeightedAverages() {
+  let totalQuantity = 0;
+  let totalQuantityLiters = 0;
+  let weightedSumPH = 0;
+  let weightedSumPeroxide = 0;
+  let weightedSum232 = 0;
+  let weightedSum270 = 0;
+  let weightedSumDeltaK = 0;
+
+  selectedItems.forEach((row, itemId) => {
+    const quantity = parseFloat(row.querySelector('input[name^="quantities"]').value);
+    const ph = parseFloat(row.dataset.ph);
+    const peroxide = parseFloat(row.dataset.peroxide);
+    const abs232 = parseFloat(row.dataset.abs232);
+    const abs270 = parseFloat(row.dataset.abs270);
+    const deltaK = parseFloat(row.dataset.deltak);
+
+    totalQuantity += quantity;
+    totalQuantityLiters += quantity * 16;
+    weightedSumPH += quantity * ph;
+    weightedSumPeroxide += quantity * peroxide;
+    weightedSum232 += quantity * abs232;
+    weightedSum270 += quantity * abs270;
+    weightedSumDeltaK += quantity * deltaK;
+  });
+
+  // Update totals
+  document.getElementById('totalQuantityTanks').textContent = totalQuantity.toFixed(2);
+  document.getElementById('totalQuantityLiters').textContent = totalQuantityLiters.toFixed(2);
+  document.getElementById('avgPH').textContent = (weightedSumPH / totalQuantity).toFixed(2);
+  document.getElementById('avgPeroxide').textContent = (weightedSumPeroxide / totalQuantity).toFixed(2);
+  document.getElementById('avg232').textContent = (weightedSum232 / totalQuantity).toFixed(2);
+  document.getElementById('avg270').textContent = (weightedSum270 / totalQuantity).toFixed(2);
+  document.getElementById('avgDeltaK').textContent = (weightedSumDeltaK / totalQuantity).toFixed(2);
+}
+
+// Add selected items to invoice
+document.getElementById('addSelectedItems').addEventListener('click', () => {
+  const checkboxes = document.querySelectorAll('#inventoryTable input[type="checkbox"]:checked');
+  const tbody = document.querySelector('#selectedItems tbody');
+  
+  checkboxes.forEach(checkbox => {
+    const tr = checkbox.closest('tr');
+    const itemId = checkbox.value;
+    
+    if (!selectedItems.has(itemId)) {
+      const cells = tr.cells;
+      const newRow = document.createElement('tr');
+      newRow.dataset.ph = checkbox.dataset.ph;
+      newRow.dataset.peroxide = checkbox.dataset.peroxide;
+      newRow.dataset.abs232 = checkbox.dataset.abs232;
+      newRow.dataset.abs270 = checkbox.dataset.abs270;
+      newRow.dataset.deltak = checkbox.dataset.deltak;
+      
+      newRow.innerHTML = `
+        <td>${tbody.children.length + 1}</td>
+        <td>${cells[1].textContent}</td>
+        <td>
+          <input type="number" class="form-control form-control-sm quantity-input" 
+                 name="quantities[${itemId}]" 
+                 min="0.1" 
+                 step="0.1"
+                 max="${cells[2].textContent}" 
+                 value="1"
+                 required>
+        </td>
+        <td class="net-weight">16</td>
+        <td>${checkbox.dataset.ph}</td>
+        <td>${checkbox.dataset.peroxide}</td>
+        <td>${checkbox.dataset.abs232}</td>
+        <td>${checkbox.dataset.abs270}</td>
+        <td>${checkbox.dataset.deltak}</td>
+        <td>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this, '${itemId}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      `;
+      tbody.appendChild(newRow);
+      selectedItems.set(itemId, newRow);
+    }
+  });
+  
+  // Update calculations
+  calculateWeightedAverages();
+  
+  // Hide modal
+  bootstrap.Modal.getInstance(document.getElementById('inventoryModal')).hide();
+});
+
+// Handle quantity changes
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('quantity-input')) {
+    const quantity = parseFloat(e.target.value);
+    const netWeightCell = e.target.closest('tr').querySelector('.net-weight');
+    netWeightCell.textContent = (quantity * 16).toFixed(2);
+    calculateWeightedAverages();
+  }
+});
+
+// Remove item
+function removeItem(button, itemId) {
+  const row = button.closest('tr');
+  row.remove();
+  selectedItems.delete(itemId);
+  calculateWeightedAverages();
+  
+  // Renumber remaining rows
+  const rows = document.querySelectorAll('#selectedItems tbody tr:not(#noItems)');
+  rows.forEach((row, index) => {
+    row.cells[0].textContent = index + 1;
+  });
+  
+  // Show "no items" message if no items left
+  if (rows.length === 0) {
+    document.getElementById('noItems').style.display = '';
+  }
+}
+
+// Handle invoice form submission
+document.getElementById('invoiceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Validate quantities
+    const quantities = {};
+    let isValid = true;
+    const quantityInputs = document.querySelectorAll('input[name^="quantities"]');
+    quantityInputs.forEach(input => {
+        const quantity = parseFloat(input.value);
+        const max = parseFloat(input.max);
+        const itemIdMatch = input.name.match(/quantities\[(\d+)\]/);
+        if (quantity <= 0 || quantity > max) {
+            isValid = false;
+            input.classList.add('is-invalid');
+        } else {
+            input.classList.remove('is-invalid');
+            if (itemIdMatch) {
+                quantities[itemIdMatch[1]] = quantity;
+            }
+        }
+    });
+    if (!isValid) {
+        alert('يرجى التأكد من صحة الكميات المدخلة');
+        return;
+    }
+    // Add quantities to form data
+    const formData = new FormData(this);
+    formData.append('quantities', JSON.stringify(quantities));
+    // Submit form
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = `/invoices/${data.invoiceId}`;
+        } else {
+            alert(data.message || 'حدث خطأ أثناء إنشاء الفاتورة');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('حدث خطأ أثناء إنشاء الفاتورة');
+    });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  alert('DOM loaded');
+  loadInventory();
+  
+  // Filter change handlers
+  document.getElementById('filterDate').addEventListener('change', loadInventory);
+  document.getElementById('filterSample').addEventListener('input', loadInventory);
+});
+
+// Set current date on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    document.getElementById('invoice_date').value = `${year}-${month}-${day}`;
+});
+
+// Prevent changing to future dates
+document.getElementById('invoice_date').addEventListener('change', function() {
+    const selectedDate = new Date(this.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time part for proper comparison
+    
+    if (selectedDate > today) {
+        alert('لا يمكن اختيار تاريخ في المستقبل');
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        this.value = `${year}-${month}-${day}`;
+    }
+});
+</script>
+
+<style>
+.required:after {
+  content: " *";
+  color: red;
+}
+
+.form-check-input {
+  cursor: pointer;
+}
+
+#selectedItems input[type="number"] {
+  width: 80px;
+}
+</style> 

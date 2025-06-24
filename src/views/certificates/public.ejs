@@ -1,0 +1,318 @@
+<%
+function formatNumberDisplay(value) {
+    if (value === null || value === undefined || value === '') return '-';
+
+    const num = parseFloat(value);
+    if (isNaN(num)) return '-';
+
+    if (num === 0) return '0';
+
+    let result = '';
+    
+    if (Number.isInteger(num)) {
+        result = num.toString();
+    } else {
+        const decimalStr = num.toString().split('.')[1];
+        if (!decimalStr) {
+            result = num.toString();
+        } else if (decimalStr.length <= 2) {
+            result = num.toString();
+        } else {
+            result = num.toFixed(3);
+        }
+    }
+
+    // إذا كان الرقم سالب، أضف رمز اتجاه LTR قبل السالب لعرضه بشكل صحيح في RTL
+    if (num < 0) {
+        return '\u200E' + result;
+    }
+
+    return result;
+}
+%>
+
+
+<div class="container-fluid mt-4">
+  <div class="card shadow">
+    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-certificate me-2"></i>
+        شهادة تحليل عينة زيت زيتون رقم (<%= certificate.certificate_number %>)
+      </h5>
+    </div>
+    <div class="card-body">
+      <!-- Print Header - Only shows when printing -->
+      <div class="d-none d-print-block">
+        <div class="print-header">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div style="flex: 1; text-align: right;">
+              <h3 class="mb-2" style="font-size: 18pt;">فاتورة زيوت الزيتون في  مؤسسة عجاج أخوان التجارية</h3>
+              <h4 style="font-size: 14pt; margin-bottom: 10px;">
+                شهادة تحليل عينة زيت زيتون رقم (<%= certificate.certificate_number %>)
+              </h4>
+              <p style="font-size: 10pt; color: #555; margin: 0;">سوريا، حماة، أوتسرتاد دمشق حلب الدولي | 0940500511 - 0988111127 | ajajbrothers@gmail.com</p>
+            </div>
+            <div style="flex: 0 0 auto;">
+              <img src="/public/images/nexa.png" alt="شعار المختبر" style="width: 60px; height: 60px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-12">
+          <table class="table table-bordered info-table">
+            <tbody>
+              <tr>
+                <td style="width: 50%;">
+                  <h6 class="mb-2">بيانات العميل/المورد</h6>
+                  <p class="mb-1"><strong>الاسم:</strong> <%= certificate.customer_name %></p>
+                  <% if (certificate.customer_phone) { %>
+                    <p class="mb-1"><strong>رقم الهاتف:</strong> <%= certificate.customer_phone %></p>
+                  <% } %>
+                  <% if (certificate.customer_address) { %>
+                    <p class="mb-1"><strong>العنوان:</strong> <%= certificate.customer_address %></p>
+                  <% } %>
+                </td>
+                <td style="width: 50%;">
+                  <h6 class="mb-2">بيانات الشهادة</h6>
+                  <p class="mb-1"><strong>رقم الشهادة:</strong> <%= certificate.certificate_number %></p>
+                  <p class="mb-1"><strong>التاريخ:</strong> <%= new Date(certificate.date).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></p>
+                  <% if (certificate.notes) { %>
+                    <p class="mb-1"><strong>ملاحظات:</strong> <%= certificate.notes %></p>
+                  <% } %>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="mb-3 d-print-none">
+        <div class="alert alert-info py-2">
+          <strong>العنوان :</strong> سوريا - حماة - ، أوتستراد دمشق حلب الدولي - هاتف: 0940500511 - 0988111127 - بريد: ajajbrothers@gmail.com - س.ت 10369 - س.ص 10  
+        </div>
+      </div>
+
+      <div class="table-responsive mb-3">
+        <table class="table table-bordered table-striped">
+          <thead class="table-light">
+            <tr>
+              <th>رقم العينة</th>
+              <th>الكمية</th>
+              <th>وحدة تعبئة</th>
+              <th>وزن تعبئة</th>
+              <th>وزن إجمالي</th>
+              <th>درجة حموضة</th>
+              <th>رقم البيروكسيد</th>
+              <th>امتصاص 232</th>
+              <th>امتصاص 266</th>
+              <th>امتصاص 270</th>
+              <th>امتصاص 274</th>
+              <th>دلتا k</th>
+              <th>ستيغما ستاديين</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% certificate.items.forEach(function(item) { %>
+              <tr>
+                <td><%= item.sample_number %></td>
+                <td><%= formatNumberDisplay(item.quantity) %></td>
+                <td><%= item.packaging_unit %></td>
+                <td><%= formatNumberDisplay(item.packaging_weight) %></td>
+                <td><%= formatNumberDisplay(item.total_weight) %></td>
+                <td><%= formatNumberDisplay(item.ph) %></td>
+                <td><%= formatNumberDisplay(item.peroxide) %></td>
+                <td><%= formatNumberDisplay(item.abs_232) %></td>
+                <td><%= formatNumberDisplay(item.abs_266) %></td>
+                <td><%= formatNumberDisplay(item.abs_270) %></td>
+                <td><%= formatNumberDisplay(item.abs_274) %></td>
+                <td><%= formatNumberDisplay(item.delta_k) %></td>
+                <td><%= formatNumberDisplay(item.stigmastadiene) %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="text-center"><strong>المجموع</strong></td>
+              <td><%= formatNumberDisplay(certificate.total_quantity) %></td>
+              <td></td>
+              <td><%= formatNumberDisplay(certificate.total_weight) %></td>
+              <td colspan="6"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      
+      <!-- QR Code - Only visible in print view -->
+      <div class="d-none d-print-block text-center" style="margin-top: 0.5cm;">
+          <img src="<%= qrCode %>" alt="QR Code" style="width: 100px; height: 100px;">
+          <div style="font-size: 8pt; color: #666; margin-top: 4px;">
+              امسح الرمز لمشاهدة الشهادة إلكترونياً
+          </div>
+      </div>
+
+      <!-- Print Footer -->
+      <div class="d-none d-print-block print-footer">
+        <hr style="border-color: #ccc; margin: 4px 0;">
+        <div style="font-size: 8.5pt; color: #666;">
+          جميع الحقوق محفوظة © 2025 نظام إدارة المختبر | تم التطوير بواسطة شركة NEXA للبرمجيات
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const printButton = document.querySelector('.print-button');
+    if (printButton) {
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+    }
+});
+</script>
+
+<style>
+/* Screen Styles */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table th, .table td {
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+@media (max-width: 768px) {
+    .card-body {
+        padding: 0.5rem;
+    }
+    
+    .table {
+        font-size: 0.875rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 0.5cm !important;
+    }
+
+    html, body {
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        direction: rtl;
+        text-align: right;
+        font-family: 'Cairo', sans-serif;
+        font-size: 9pt;
+    }
+
+    .container-fluid {
+        padding: 0.2cm !important;
+        margin: 0 !important;
+    }
+
+    .card-body {
+        padding: 0.2cm !important;
+    }
+
+    /* Print Header */
+    .print-header {
+        padding-bottom: 0.3cm !important;
+        margin-bottom: 0.3cm !important;
+    }
+
+    .print-header h3 {
+        font-size: 14pt !important;
+        margin-bottom: 3pt !important;
+    }
+
+    .print-header h4 {
+        font-size: 12pt !important;
+        margin-bottom: 3pt !important;
+    }
+
+    .print-header p {
+        font-size: 8pt !important;
+        margin: 1pt 0 !important;
+    }
+
+    /* Info Table */
+    .info-table {
+        margin-bottom: 0.3cm !important;
+    }
+
+    .info-table td {
+        padding: 3pt !important;
+    }
+
+    .info-table h6 {
+        font-size: 8pt !important;
+        margin-bottom: 2pt !important;
+    }
+
+    .info-table p {
+        font-size: 7pt !important;
+        margin-bottom: 1pt !important;
+    }
+
+    /* Main Table */
+    .table-responsive {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .table {
+        margin: 0 !important;
+        font-size: 7pt !important;
+        line-height: 1.1 !important;
+    }
+
+    .table th {
+        padding: 2pt 1pt !important;
+        font-size: 7pt !important;
+    }
+
+    .table td {
+        padding: 2pt 1pt !important;
+        font-size: 7pt !important;
+    }
+
+    /* Column Widths */
+    .table th:nth-child(1), .table td:nth-child(1) { width: 5% !important; } /* رقم العينة */
+    .table th:nth-child(2), .table td:nth-child(2) { width: 5% !important; } /* الكمية */
+    .table th:nth-child(3), .table td:nth-child(3) { width: 7% !important; } /* وحدة تعبئة */
+    .table th:nth-child(4), .table td:nth-child(4) { width: 7% !important; } /* وزن تعبئة */
+    .table th:nth-child(5), .table td:nth-child(5) { width: 7% !important; } /* وزن إجمالي */
+    .table th:nth-child(6), .table td:nth-child(6) { width: 9% !important; } /* درجة حموضة */
+    .table th:nth-child(7), .table td:nth-child(7) { width: 10% !important; } /* رقم البيروكسيد */
+    .table th:nth-child(8), .table td:nth-child(8) { width: 10% !important; } /* وزن العينة */
+    .table th:nth-child(9), .table td:nth-child(9) { width: 8% !important; } /* 232 */
+    .table th:nth-child(10), .table td:nth-child(10) { width: 8% !important; } /* 270 */
+    .table th:nth-child(11), .table td:nth-child(11) { width: 8% !important; } /* دلتا k */
+    .table th:nth-child(12), .table td:nth-child(12) { width: 8% !important; } /* 274 */
+    .table th:nth-child(13), .table td:nth-child(13) { width: 8% !important; } /* ستيغما ستاديين */
+
+    /* Signatures Section */
+    .row.mb-3 {
+        margin-top: 0.3cm !important;
+        margin-bottom: 0.3cm !important;
+        font-size: 8pt !important;
+    }
+
+    /* Footer */
+    .print-footer {
+        margin-top: 0.3cm !important;
+        font-size: 7pt !important;
+    }
+
+    .print-footer hr {
+        margin: 2pt 0 !important;
+    }
+}
+</style> 

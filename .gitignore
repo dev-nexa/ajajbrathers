@@ -1,0 +1,15 @@
+.env
+*.rar
+*.zip
+
+src/.env
+src/*.zip
+src/*.rar
+src/public/certificates_pdf
+src/public/invoices_pdf
+src/public/inventory_pdf
+src/public/images
+
+node_modules/
+logs/
+package-lock.json

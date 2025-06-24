@@ -1,0 +1,324 @@
+:root {
+  --primary-color: #218838;
+  --primary-light: #4CAF50;
+  --primary-dark: #1B5E20;
+  --secondary-color: #155724;
+  --accent-color: #e9f5e1;
+  --background-light: #f8fdf5;
+  --text-dark: #222;
+  --text-light: #fff;
+  --border-color: #C8E6C9;
+  --text-color: #333333;
+  --light-bg: #F5F5F5;
+  --white: #FFFFFF;
+  --danger: #D32F2F;
+  --warning: #FFA000;
+  --success: #388E3C;
+}
+
+/* Base Styles */
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--background-light);
+  color: var(--text-dark);
+  line-height: 1.6;
+  direction: rtl;
+  text-align: right;
+}
+
+/* Navbar Customization */
+.navbar {
+  box-shadow: 0 2px 8px rgba(33,136,56,0.08);
+}
+
+.navbar, .bg-success {
+  background: var(--primary-color) !important;
+}
+
+.navbar .navbar-brand, .navbar .nav-link, .navbar .dropdown-item {
+  color: var(--text-light) !important;
+}
+
+.navbar .dropdown-item {
+  color: var(--text-dark) !important;
+}
+
+.navbar .nav-link.active, .navbar .nav-link:focus, .navbar .nav-link:hover {
+  color: #ffe082 !important;
+}
+
+/* Card Styles */
+.card {
+  border: none;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  margin-bottom: 1.5rem;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+/* Table Styles */
+.table {
+  background: #fff;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.table-success {
+  background: var(--accent-color) !important;
+  color: var(--primary-color) !important;
+}
+
+/* Button Styles */
+.btn {
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary, .btn-success {
+  background: var(--primary-color) !important;
+  border: none;
+}
+
+.btn-primary:hover, .btn-success:hover {
+  background: var(--secondary-color) !important;
+}
+
+.btn-outline-primary, .btn-outline-success {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover, .btn-outline-success:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+  border-radius: 0.5rem;
+  border: 1px solid #d4e7c5;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem #e9f5e1;
+}
+
+/* Alert Styles */
+.alert {
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: #e9f5e1;
+  color: var(--primary-color);
+  border: none;
+}
+
+.alert-danger {
+  background: #ffeaea;
+  color: #b71c1c;
+  border: none;
+}
+
+.alert-info {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: none;
+}
+
+.alert-light {
+  background: #f8f9fa;
+  color: #333;
+  border: none;
+}
+
+/* Badge Styles */
+.badge {
+  padding: 0.5em 0.75em;
+  font-weight: 500;
+}
+
+.badge.bg-success {
+  background: var(--primary-color) !important;
+}
+
+.badge.bg-warning {
+  background: #ffc107 !important;
+  color: #333 !important;
+}
+
+.badge.bg-danger {
+  background: #dc3545 !important;
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 1rem;
+}
+
+/* Utility Classes */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .card, .table {
+    font-size: 0.95em;
+  }
+}
+
+/* Default styles (for screen) */
+.print-only {
+  display: none;
+}
+
+.print-logo-container {
+  display: none; /* Hide by default */
+}
+
+/* Keep screen table responsive styles */
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Styles for the print header container */
+.print-header {
+  text-align: center;
+  padding-bottom: 15px;
+  margin-bottom: 20px; /* Space below header */
+  border-bottom: 1px solid #000; /* Visible line below header */
+  width: 100%; /* Full width */
+  display: none; /* Hide by default */
+  box-sizing: border-box; /* Include padding/border */
+  font-family: 'Cairo', sans-serif; /* Arabic font */
+  page-break-after: avoid; /* Avoid page break after header */
+}
+
+/* Styles for the print logo container */
+.print-logo-container {
+  display: none; /* Hide by default */
+}
+
+/* Styles for the table */
+.table {
+  background: #fff;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+/* Print Styles */
+@media print {
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  body {
+    padding-top: 0px !important;
+    padding-bottom: 30px !important;
+    margin: 0;
+  }
+  .no-print, .d-print-none, .inventory-header-actions, .d-flex.gap-2, .navbar, .navbar * { display: none !important; }
+  .print-footer {
+    position: fixed;
+    bottom: 1cm;
+    left: 0;
+    right: 0;
+    width: 100%;
+    text-align: center;
+    z-index: 1000;
+    background: #fff;
+    border-top: 1px solid #000;
+    font-size: 10px;
+    padding: 5px 0 0 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+}
+
+/* Media query for large screens */
+@media (min-width: 992px) {
+  .container,
+  .container-lg,
+  .container-md,
+  .container-sm {
+    max-width: 10200px !important;
+  }
+  .container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* General Styles */
+body {
+    font-family: 'Cairo', sans-serif;
+}
+
+/* Utility Classes */
+.required:after {
+    content: " *";
+    color: red;
+}
+
+/* Button Styles */
+.btn-xs {
+    padding: 0.1rem 0.3rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Table Styles */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+/* Form Styles */
+.form-label {
+    font-weight: 500;
+}
+
+/* Navigation Styles */
+.navbar-brand img {
+    height: 75px;
+    width: auto;
+}
+
+/* Footer Styles */
+footer {
+    margin-top: auto;
+    font-size: 0.9rem;
+} 

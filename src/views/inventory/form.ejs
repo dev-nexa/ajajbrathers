@@ -1,0 +1,11 @@
+            <div class="col-md-4">
+              <label class="form-label required">الكمية الأساسية</label>
+              <input type="number" class="form-control" name="base_quantity" step="0.1" min="0.1"
+                value="<%= locals.item ? item.base_quantity : '' %>" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label required">الوزن الصافي (إدخال يدوي)</label>
+              <input type="number" class="form-control" name="net_weight_total" step="0.1" min="0.1"
+                value="<%= locals.item ? item.net_weight_total : '' %>" required>
+              <small class="form-text text-muted">يرجى إدخال الوزن الصافي يدوياً</small>
+            </div> 

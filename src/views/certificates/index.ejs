@@ -1,0 +1,415 @@
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>الشهادات</h2>
+        <% if (user.role === 'editor') { %>
+            <div class="d-flex gap-2 mb-3">
+                <button id="deleteSelectedBtn" class="btn btn-danger" disabled>
+                    <i class="fas fa-trash me-1"></i> حذف نهائي
+                </button>
+                <button id="trashSelectedBtn" class="btn btn-warning" disabled>
+                    <i class="fas fa-archive me-1"></i> نقل إلى سلة المحذوفات
+                </button>
+                <a href="/certificates/deleted" class="btn btn-primary">
+                    <i class="fas fa-trash-restore me-1"></i> سلة المحذوفات
+                </a>
+                <a href="/certificates/create-type" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> إنشاء شهادة جديدة
+                </a>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Filters -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form id="filterForm" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">التاريخ</label>
+                    <input type="text" class="form-control datepicker" name="date" value="<%= locals.filters?.date || '' %>" placeholder="يوم/شهر/سنة">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">العميل</label>
+                    <input type="text" class="form-control" name="customer" value="<%= locals.filters?.customer || '' %>" placeholder="اسم العميل">
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> بحث
+                    </button>
+                    <button type="button" class="btn btn-outline-success" id="filterTodayBtn">
+                        <i class="fas fa-calendar-day me-1"></i> عرض نتائج اليوم
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="clearFiltersBtn">
+                        <i class="fas fa-redo me-1"></i> تحديث
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <% if (user.role === 'editor') { %>
+                            <th><input type="checkbox" id="selectAllCertificates"></th>
+                            <% } %>
+                            <th>رقم الشهادة</th>
+                            <th>التاريخ</th>
+                            <th>اسم العميل</th>
+                            <th>نوع العينة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (certificates && certificates.length > 0) { %>
+                            <% certificates.forEach(certificate => { %>
+                                <tr>
+                                    <% if (user.role === 'editor') { %>
+                                    <td>
+                                        <input type="checkbox" class="certificate-checkbox" data-id="<%= certificate.id %>">
+                                    </td>
+                                    <% } %>
+                                    <td><%= certificate.certificate_number %></td>
+                                    <td><%= new Date(certificate.date).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' }) %></td>
+                                    <td><%= certificate.customer_name %></td>
+                                    <td>
+                                        <% if (certificate.type === 'internal') { %>
+                                            داخلية
+                                        <% } else { %>
+                                            خارجية
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="/certificates/<%= certificate.id %>" class="btn btn-sm btn-info me-1" title="معاينة">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="<%= user.role === 'editor' ? '6' : '5' %>" class="text-center">لا توجد شهادات</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteCertificateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    تأكيد الحذف
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف الشهادة رقم <span id="certificateNumber" class="fw-bold"></span>؟
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    إلغاء
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">
+                    <i class="fas fa-trash me-1"></i>
+                    حذف
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Flatpickr
+    const datepickerInput = flatpickr(".datepicker", {
+        locale: "ar",
+        dateFormat: "Y-m-d",
+        altFormat: "d/m/Y",
+        altInput: true,
+        allowInput: true
+    });
+
+    // Set the initial date value in Flatpickr if a filter date exists
+    const dateInput = document.querySelector('input[name="date"]');
+    if (dateInput && dateInput.value) {
+        datepickerInput.setDate(dateInput.value);
+    }
+
+    // Handle filter form submission
+    document.getElementById('filterForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const searchParams = new URLSearchParams();
+
+        for (const [key, value] of formData.entries()) {
+            if (value) {
+                searchParams.append(key, value);
+            }
+        }
+
+        window.location.href = `/certificates?${searchParams.toString()}`;
+    });
+
+    // Initialize filter today button
+    const filterTodayBtn = document.getElementById('filterTodayBtn');
+    if (filterTodayBtn) {
+        filterTodayBtn.addEventListener('click', filterToday);
+    }
+
+    // Initialize clear filters button
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', clearFilters);
+    }
+
+    // Delete certificate functionality
+    let certificateToDelete = null;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteCertificateModal'));
+
+    // Handle delete button clicks
+    document.querySelector('.table').addEventListener('click', function(e) {
+        const deleteBtn = e.target.closest('.delete-certificate');
+        if (!deleteBtn) return;
+        
+        const certificateId = deleteBtn.dataset.id;
+        const certificateNumber = deleteBtn.closest('tr').querySelector('td:first-child').textContent;
+        
+        certificateToDelete = certificateId;
+        document.getElementById('certificateNumber').textContent = certificateNumber;
+        deleteModal.show();
+    });
+
+    // Handle confirm delete
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        if (!certificateToDelete) return;
+        
+        fetch(`/certificates/${certificateToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            deleteModal.hide();
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'حدث خطأ أثناء حذف الشهادة');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء حذف الشهادة');
+            deleteModal.hide();
+        });
+    });
+
+    // Bulk actions functionality
+    <% if (user.role === 'editor') { %>
+    // Select all functionality
+    const selectAllCheckbox = document.getElementById('selectAllCertificates');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.certificate-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateBulkActionButtons();
+        });
+    }
+
+    // Handle individual checkboxes
+    const checkboxes = document.querySelectorAll('.certificate-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateBulkActionButtons();
+            
+            // Update the select all checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllCertificates');
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            }
+        });
+    });
+
+    // Update bulk action buttons state
+    function updateBulkActionButtons() {
+        const checkedBoxes = document.querySelectorAll('.certificate-checkbox:checked');
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        const trashSelectedBtn = document.getElementById('trashSelectedBtn');
+        
+        if (deleteSelectedBtn) {
+            if (checkedBoxes.length > 0) {
+                deleteSelectedBtn.disabled = false;
+                deleteSelectedBtn.classList.remove('btn-outline-danger');
+                deleteSelectedBtn.classList.add('btn-danger');
+            } else {
+                deleteSelectedBtn.disabled = true;
+                deleteSelectedBtn.classList.remove('btn-danger');
+                deleteSelectedBtn.classList.add('btn-outline-danger');
+            }
+        }
+        
+        if (trashSelectedBtn) {
+            if (checkedBoxes.length > 0) {
+                trashSelectedBtn.disabled = false;
+                trashSelectedBtn.classList.remove('btn-outline-warning');
+                trashSelectedBtn.classList.add('btn-warning');
+            } else {
+                trashSelectedBtn.disabled = true;
+                trashSelectedBtn.classList.remove('btn-warning');
+                trashSelectedBtn.classList.add('btn-outline-warning');
+            }
+        }
+    }
+
+    // Handle bulk delete button click
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.certificate-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                alert('يرجى اختيار شهادة واحدة على الأقل للحذف');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من حذف ${checkedBoxes.length} شهادة نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                return;
+            }
+
+            // Disable button and show loading
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري الحذف...';
+
+            // Collect selected IDs
+            const selectedIds = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            
+            // Send delete request
+            fetch('/certificates/delete-multiple', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'حدث خطأ أثناء الحذف');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'حدث خطأ أثناء الحذف');
+                
+                // Re-enable button
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash me-1"></i> حذف نهائي';
+            });
+        });
+    }
+
+    // Handle bulk trash button click
+    const trashSelectedBtn = document.getElementById('trashSelectedBtn');
+    if (trashSelectedBtn) {
+        trashSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.certificate-checkbox:checked');
+            
+            if (checkedBoxes.length === 0) {
+                alert('يرجى اختيار شهادة واحدة على الأقل للنقل إلى سلة المحذوفات');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من نقل ${checkedBoxes.length} شهادة إلى سلة المحذوفات؟`)) {
+                return;
+            }
+
+            // Disable button and show loading
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> جاري النقل...';
+
+            // Collect selected IDs
+            const selectedIds = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+            
+            // Send trash request
+            fetch('/certificates/trash-multiple', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ids: selectedIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'حدث خطأ أثناء النقل إلى سلة المحذوفات');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(error.message || 'حدث خطأ أثناء النقل إلى سلة المحذوفات');
+                
+                // Re-enable button
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-archive me-1"></i> نقل إلى سلة المحذوفات';
+            });
+        });
+    }
+
+    // Initialize bulk action buttons state
+    updateBulkActionButtons();
+    <% } %>
+});
+
+// Filter today function
+function filterToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="date"]').value = today;
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+
+// Clear filters function
+function clearFilters() {
+    const datepicker = document.querySelector('input[name="date"]')._flatpickr;
+    if (datepicker) {
+        datepicker.clear();
+    }
+    document.querySelector('input[name="customer"]').value = '';
+    document.getElementById('filterForm').dispatchEvent(new Event('submit'));
+}
+</script>
+
+<style>
+@media print {
+    .d-print-none { display: none !important; }
+    .card { border: none !important; box-shadow: none !important; }
+    .card-body { padding: 0 !important; }
+    .table { font-size: 0.9em; }
+    .table td, .table th { padding: 0.5rem !important; }
+    body { background: white !important; }
+    .container { max-width: 100% !important; }
+}
+</style> 

@@ -1,0 +1,60 @@
+<div class="card shadow">
+  <div class="card-header">
+    <h4 class="mb-0"><%= locals.userItem ? 'تعديل مستخدم' : 'إضافة مستخدم جديد' %></h4>
+  </div>
+  <div class="card-body">
+    <form action="<%= locals.userItem ? `/users/${userItem.id}/edit` : '/users/create' %>" method="POST" id="userForm">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label for="username" class="form-label">اسم المستخدم</label>
+          <input type="text" class="form-control" id="username" name="username" 
+                 value="<%= locals.userItem ? userItem.username : '' %>" required>
+        </div>
+        
+        <div class="col-md-6">
+          <label for="role" class="form-label">الدور</label>
+          <select class="form-select" id="role" name="role" required>
+            <option value="">اختر الدور</option>
+            <option value="editor" <%= locals.userItem && userItem.role === 'editor' ? 'selected' : '' %>>محرر</option>
+            <option value="user" <%= locals.userItem && userItem.role === 'user' ? 'selected' : '' %>>مستخدم</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label for="password" class="form-label">
+            <%= locals.userItem ? 'كلمة المرور الجديدة (اتركها فارغة إذا لم ترد تغييرها)' : 'كلمة المرور' %>
+          </label>
+          <input type="password" class="form-control" id="password" name="password" 
+                 <%= locals.userItem ? '' : 'required' %>>
+        </div>
+
+        <div class="col-md-6">
+          <label for="confirmPassword" class="form-label">تأكيد كلمة المرور</label>
+          <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" 
+                 <%= locals.userItem ? '' : 'required' %>>
+        </div>
+
+        <div class="col-12">
+          <div class="d-flex justify-content-end gap-2">
+            <a href="/users" class="btn btn-secondary">إلغاء</a>
+            <button type="submit" class="btn btn-primary">
+              <%= locals.userItem ? 'حفظ التغييرات' : 'إضافة' %>
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.getElementById('userForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password && password !== confirmPassword) {
+      e.preventDefault();
+      alert('كلمات المرور غير متطابقة');
+    }
+  });
+</script> 
