@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { pool } = require('../database/db');
 
-// عرض صفحة تسجيل الدخولss
+// عرض صفحة تسجيل الدخول
 exports.getLogin = (req, res) => {
     res.render('auth/login', {
         title: 'تسجيل الدخول',
